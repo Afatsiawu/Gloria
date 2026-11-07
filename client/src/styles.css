@@ -1897,6 +1897,14 @@ tbody tr:hover {
   .modal-wide { max-width: 960px; }
 }
 
+/* Small phones: stack label/value rows instead of fixed two-column grids. */
+@media (max-width: 699px) {
+  .definition-list > div {
+    grid-template-columns: 1fr;
+    gap: 0.15rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
