@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFetch, usePageTitle } from '../hooks/useApi.js';
-import { Badge, SkeletonCards } from '../components/UI.jsx';
+import { Badge, Icon, SkeletonCards } from '../components/UI.jsx';
 import { formatMoney } from '../utils/format.js';
 
 const FEATURES = [
@@ -69,7 +69,9 @@ export default function LandingPage() {
             </p>
             <form className="hero-search" onSubmit={submit} role="search">
               <div className="search-input-wrap">
-                <span className="search-icon" aria-hidden="true">Search</span>
+                <span className="search-icon" aria-hidden="true">
+                  <Icon name="Search" size={16} />
+                </span>
                 <label className="sr-only" htmlFor="hero-search-input">Search medicines</label>
                 <input
                   id="hero-search-input"
@@ -86,9 +88,15 @@ export default function LandingPage() {
               <Link to="/register" className="btn btn-ghost">Create a free account</Link>
             </div>
             <div className="hero-trust">
-              <span>[x] Licensed pharmacies only</span>
-              <span>[x] Pharmacist-reviewed prescriptions</span>
-              <span>[x] Ghana Data Protection Act 843</span>
+              <span>
+                <Icon name="Check" size={14} /> Licensed pharmacies only
+              </span>
+              <span>
+                <Icon name="Check" size={14} /> Pharmacist-reviewed prescriptions
+              </span>
+              <span>
+                <Icon name="Check" size={14} /> Ghana Data Protection Act 843
+              </span>
             </div>
           </div>
           <div className="card">
@@ -132,7 +140,9 @@ export default function LandingPage() {
           {FEATURES.map((feature) => (
             <article className="card" key={feature.title}>
               <div className="card-body">
-                <div className="feature-icon" aria-hidden="true">{feature.icon}</div>
+                <div className="feature-icon" aria-hidden="true">
+                  <Icon name={feature.icon} size={22} />
+                </div>
                 <h3>{feature.title}</h3>
                 <p className="muted mb-0">{feature.text}</p>
               </div>
@@ -173,10 +183,10 @@ export default function LandingPage() {
                 </div>
                 <p className="small muted mt-1">{pharmacy.address}</p>
                 <p className="small mb-0">
-                  <span aria-hidden="true">Pin</span> {pharmacy.landmark || pharmacy.community}
+                  <Icon name="Pin" size={12} /> {pharmacy.landmark || pharmacy.community}
                 </p>
                 <p className="small mb-0">
-                  <span aria-hidden="true">Phone</span> {pharmacy.phone}
+                  <Icon name="Phone" size={12} /> {pharmacy.phone}
                 </p>
               </div>
             </article>

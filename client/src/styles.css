@@ -47,8 +47,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-body.modal-open,
-body.nav-open {
+body.modal-open {
   overflow: hidden;
 }
 
@@ -136,24 +135,6 @@ p {
 }
 
 /* ---------- header ---------- */
-.top-strip {
-  background: var(--green-950);
-  color: #d1fae5;
-  font-size: 0.76rem;
-}
-
-.top-strip-inner {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 1rem;
-  justify-content: space-between;
-  padding-block: 0.4rem;
-}
-
-.top-strip-note {
-  color: #a7f3d0;
-}
-
 .site-header {
   position: sticky;
   top: 0;
@@ -201,10 +182,17 @@ p {
 }
 
 .desktop-nav {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.2rem;
   margin-left: auto;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.desktop-nav::-webkit-scrollbar {
+  display: none;
 }
 
 .desktop-nav > a,
@@ -220,6 +208,8 @@ p {
   text-decoration: none;
   cursor: pointer;
   list-style: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .nav-more > summary::-webkit-details-marker {
@@ -269,7 +259,7 @@ p {
 }
 
 .header-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 0.45rem;
 }
@@ -315,48 +305,6 @@ p {
   font-weight: 700;
 }
 
-.menu-btn {
-  margin-left: auto;
-  min-width: 46px;
-  min-height: 46px;
-  border: 1px solid var(--line);
-  background: var(--surface);
-  border-radius: var(--radius-sm);
-  font-size: 1.25rem;
-  color: var(--green-800);
-  cursor: pointer;
-}
-
-.mobile-nav {
-  padding-bottom: 1rem;
-  border-top: 1px solid var(--line);
-  max-height: calc(100vh - 110px);
-  overflow-y: auto;
-}
-
-.mobile-links {
-  display: grid;
-  gap: 0.15rem;
-  padding-top: 0.6rem;
-}
-
-.mobile-links a {
-  display: flex;
-  align-items: center;
-  min-height: 46px;
-  padding: 0.5rem 0.7rem;
-  border-radius: 8px;
-  color: var(--muted);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.mobile-links a.active,
-.mobile-links a:hover {
-  background: var(--teal-50);
-  color: var(--green-800);
-}
-
 .icon-btn {
   display: inline-flex;
   align-items: center;
@@ -373,6 +321,11 @@ p {
 
 .icon-btn:hover {
   background: var(--surface-2);
+}
+
+.icon-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* ---------- buttons ---------- */
@@ -716,6 +669,11 @@ p {
   gap: 0.35rem;
 }
 
+.hero-trust svg {
+  color: #6ee7b7;
+  flex-shrink: 0;
+}
+
 /* ---------- search / filters ---------- */
 .search-panel {
   display: grid;
@@ -738,6 +696,12 @@ p {
   top: 50%;
   transform: translateY(-50%);
   color: var(--muted);
+}
+
+.search-input-wrap .search-icon svg {
+  display: block;
+  width: 16px;
+  height: 16px;
 }
 
 .search-input-wrap input {
@@ -1143,6 +1107,11 @@ tbody tr:hover {
   font-size: 1.1rem;
 }
 
+.stat-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
 .stat-danger { border-left-color: var(--danger); }
 .stat-warning { border-left-color: #d97706; }
 .stat-info { border-left-color: #0284c7; }
@@ -1191,6 +1160,11 @@ tbody tr:hover {
   color: #fff;
   font-weight: 800;
   z-index: 1;
+}
+
+.timeline-dot svg {
+  width: 16px;
+  height: 16px;
 }
 
 .timeline-step.done .timeline-dot {
@@ -1488,7 +1462,11 @@ tbody tr:hover {
   color: var(--green-600);
   display: grid;
   place-items: center;
-  font-size: 1.5rem;
+}
+
+.empty-icon svg {
+  width: 24px;
+  height: 24px;
 }
 
 .empty-state h2 {
@@ -1728,8 +1706,11 @@ tbody tr:hover {
   color: var(--green-700);
   display: grid;
   place-items: center;
-  font-size: 1.25rem;
-  margin-bottom: 0.6rem;
+}
+
+.feature-icon svg {
+  width: 22px;
+  height: 22px;
 }
 
 .steps {
@@ -1886,7 +1867,6 @@ tbody tr:hover {
 @media (min-width: 960px) {
   .desktop-nav { display: flex; }
   .header-actions { display: flex; }
-  .menu-btn { display: none; }
   .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .steps { grid-template-columns: repeat(4, 1fr); }
@@ -1895,6 +1875,31 @@ tbody tr:hover {
   .cart-item { grid-template-columns: 1fr 170px 140px; }
   .modal { max-width: 640px; }
   .modal-wide { max-width: 960px; }
+}
+
+/* Small phones: navigation becomes a horizontally scrollable strip and the
+   disclosure panel stacks inline instead of opening as a dropdown. */
+@media (max-width: 959px) {
+  .nav-more {
+    position: static;
+  }
+
+  .nav-more-panel {
+    position: static;
+    top: auto;
+    right: auto;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    padding: 0.2rem 0 0;
+  }
+
+  .desktop-nav > a,
+  .nav-more > summary {
+    min-height: 40px;
+    padding: 0.35rem 0.6rem;
+    font-size: 0.85rem;
+  }
 }
 
 /* Small phones: stack label/value rows instead of fixed two-column grids. */

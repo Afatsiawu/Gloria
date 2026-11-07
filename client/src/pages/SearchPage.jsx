@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useFetch, usePageTitle } from '../hooks/useApi.js';
-import { Badge, EmptyState, ErrorState, PageHeader, Pagination, SkeletonCards } from '../components/UI.jsx';
+import { Badge, EmptyState, ErrorState, Icon, PageHeader, Pagination, SkeletonCards } from '../components/UI.jsx';
 import { formatMoney } from '../utils/format.js';
 
 export default function SearchPage() {
@@ -57,7 +57,9 @@ export default function SearchPage() {
         <div className="card-body">
           <form onSubmit={submit} role="search">
             <div className="search-input-wrap">
-              <span className="search-icon" aria-hidden="true">Search</span>
+              <span className="search-icon" aria-hidden="true">
+                <Icon name="Search" size={16} />
+              </span>
               <label className="sr-only" htmlFor="search-input">Search medicines</label>
               <input
                 id="search-input"

@@ -144,20 +144,6 @@ export default function DashboardPage() {
           </table>
         </div>
       </section>
-
-      <section className="card mt-3">
-        <div className="card-header"><h2>Quick actions</h2></div>
-        <div className="card-body">
-          <div className="row">
-            <Link to="/staff/walk-in" className="btn btn-secondary">Record walk-in sale</Link>
-            <Link to="/staff/inventory" className="btn btn-secondary">Receive stock</Link>
-            <Link to="/staff/purchase-orders" className="btn btn-secondary">Raise purchase order</Link>
-            <Link to="/staff/reports" className="btn btn-secondary">Download report</Link>
-            <Link to="/staff/deliveries" className="btn btn-secondary">Plan deliveries</Link>
-            <Link to="/staff/alerts" className="btn btn-secondary">Review alerts</Link>
-          </div>
-        </div>
-      </section>
     </>
   );
 }

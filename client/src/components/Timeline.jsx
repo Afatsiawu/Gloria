@@ -1,4 +1,5 @@
 import { formatDateTime, statusLabel } from '../utils/format.js';
+import { Icon } from './UI.jsx';
 
 function buildSteps(order) {
   if (order.status === 'cancelled') {
@@ -47,7 +48,7 @@ export default function Timeline({ order }) {
         return (
           <li key={step.key} className={`timeline-step ${done ? 'done' : ''} ${isCurrent ? 'current' : ''}`}>
             <span className="timeline-dot" aria-hidden="true">
-              {done ? '[x]' : ''}
+              {done ? <Icon name="Check" size={16} /> : null}
             </span>
             <div>
               <strong>{step.label}</strong>

@@ -49,7 +49,7 @@ export default function RiderPage() {
 
       <div className="stat-grid">
         <StatCard label="Active deliveries" value={tab === 'active' ? items.length : '—'} hint="Assigned to you" tone="info" icon="Delivery" />
-        <StatCard label="Delivered" value={tab === 'delivered' ? items.length : '—'} hint="In this completed list" tone="success" icon="OK" />
+        <StatCard label="Delivered" value={tab === 'delivered' ? items.length : '—'} hint="In this completed list" tone="success" icon="Check" />
       </div>
 
       {notice && <Alert tone="success">{notice}</Alert>}

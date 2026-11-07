@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
-import { roleHome } from '../context/AuthContext.jsx';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { useAuth, roleHome } from '../context/AuthContext.jsx';
+import { Icon } from './UI.jsx';
 
 const PRIMARY = {
   public: [
@@ -76,18 +75,10 @@ function Brand() {
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const [open, setOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
   const role = user?.role || 'public';
   const primary = PRIMARY[role] || PRIMARY.public;
   const secondary = SECONDARY[role] || [];
-
-  useEffect(() => setOpen(false), [location.pathname]);
-  useEffect(() => {
-    document.body.classList.toggle('nav-open', open);
-    return () => document.body.classList.remove('nav-open');
-  }, [open]);
 
   const handleLogout = async () => {
     await logout();
@@ -99,25 +90,9 @@ export default function Layout() {
       <a className="skip-link" href="#main">
         Skip to main content
       </a>
-      <div className="top-strip">
-        <div className="container top-strip-inner">
-          <span>Serving 10 community pharmacies in Doryumu &amp; Kordibe, Shai-Osudoku District</span>
-          <span className="top-strip-note">Prescriptions verified by licensed pharmacists</span>
-        </div>
-      </div>
       <header className="site-header">
         <div className="container header-inner">
           <Brand />
-          <button
-            type="button"
-            className="menu-btn"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-          >
-            <span aria-hidden="true">{open ? 'x' : 'menu'}</span>
-            <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>
-          </button>
           <nav className="desktop-nav" aria-label="Main navigation">
             {primary.map((link) => (
               <NavLink key={link.to} to={link.to} className={({ isActive }) => (isActive ? 'active' : '')}>
@@ -141,7 +116,7 @@ export default function Layout() {
             {user ? (
               <>
                 <Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications">
-                  <span aria-hidden="true">Bell</span>
+                  <Icon name="Bell" size={18} />
                 </Link>
                 <Link to={role === 'customer' ? '/account' : roleHome(role)} className="user-chip">
                   <span className="avatar" aria-hidden="true">{user.full_name?.charAt(0) || 'U'}</span>
@@ -162,30 +137,6 @@ export default function Layout() {
             )}
           </div>
         </div>
-        {open && (
-          <nav id="mobile-nav" className="mobile-nav container" aria-label="Mobile navigation">
-            <div className="mobile-links">
-              {primary.map((link) => (
-                <NavLink key={link.to} to={link.to}>{link.label}</NavLink>
-              ))}
-              {secondary.map((link) => (
-                <NavLink key={link.to} to={link.to}>{link.label}</NavLink>
-              ))}
-              {user && <NavLink to="/notifications">Notifications</NavLink>}
-              {!user && (
-                <>
-                  <NavLink to="/login">Sign in</NavLink>
-                  <NavLink to="/register">Create account</NavLink>
-                </>
-              )}
-              {user && (
-                <button type="button" className="btn btn-ghost" onClick={handleLogout}>
-                  Sign out
-                </button>
-              )}
-            </div>
-          </nav>
-        )}
       </header>
 
       <main id="main" className="container page">
