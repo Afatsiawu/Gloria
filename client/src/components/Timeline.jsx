@@ -47,7 +47,7 @@ export default function Timeline({ order }) {
         return (
           <li key={step.key} className={`timeline-step ${done ? 'done' : ''} ${isCurrent ? 'current' : ''}`}>
             <span className="timeline-dot" aria-hidden="true">
-              {done ? '✓' : ''}
+              {done ? '[x]' : ''}
             </span>
             <div>
               <strong>{step.label}</strong>

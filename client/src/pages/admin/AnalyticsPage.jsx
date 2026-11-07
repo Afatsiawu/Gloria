@@ -66,10 +66,10 @@ export default function AnalyticsPage() {
       {data && (
         <>
           <div className="stat-grid">
-            <StatCard label="Revenue" value={formatMoney(data.totals.revenue)} hint={`${data.range.from} to ${data.range.to}`} tone="success" icon="💰" />
-            <StatCard label="Paid orders" value={data.totals.orders} hint={`Average ${formatMoney(data.totals.average_order)}`} icon="🧾" />
-            <StatCard label="Units dispensed" value={data.totals.units} hint="Across all order lines" icon="💊" />
-            <StatCard label="Product revenue" value={formatMoney(data.totals.product_revenue)} hint="Excludes delivery fees" icon="📦" />
+            <StatCard label="Revenue" value={formatMoney(data.totals.revenue)} hint={`${data.range.from} to ${data.range.to}`} tone="success" icon="Money" />
+            <StatCard label="Paid orders" value={data.totals.orders} hint={`Average ${formatMoney(data.totals.average_order)}`} icon="Receipt" />
+            <StatCard label="Units dispensed" value={data.totals.units} hint="Across all order lines" icon="Pill" />
+            <StatCard label="Product revenue" value={formatMoney(data.totals.product_revenue)} hint="Excludes delivery fees" icon="Box" />
           </div>
 
           <div className="grid grid-2 mt-2">

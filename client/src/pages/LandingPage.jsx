@@ -6,32 +6,32 @@ import { formatMoney } from '../utils/format.js';
 
 const FEATURES = [
   {
-    icon: '🔎',
+    icon: 'Search',
     title: 'Compare live stock and prices',
     text: 'See which of the 10 participating pharmacies has your medicine today, at what price, and how far away it is.',
   },
   {
-    icon: '📋',
+    icon: 'Clipboard',
     title: 'Prescriptions verified by pharmacists',
     text: 'Upload a photo of a prescription-only medicine order. A licensed pharmacist reviews it before anything is released.',
   },
   {
-    icon: '🛵',
+    icon: 'Delivery',
     title: 'Pickup or community delivery',
     text: 'Collect at the counter or choose a delivery zone in Doryumu or Kordibe with a transparent fee.',
   },
   {
-    icon: '💳',
+    icon: 'Card',
     title: 'MTN, Telecel, AT or cash',
     text: 'Pay with mobile money or pay cash on pickup/delivery. Every order has a printable receipt.',
   },
   {
-    icon: '🔔',
+    icon: 'Bell',
     title: 'Refill reminders that respect you',
     text: 'Set an interval for chronic medicines and receive a reminder when it is time to restock. Opt out any time.',
   },
   {
-    icon: '📊',
+    icon: 'Chart',
     title: 'Data-driven pharmacy operations',
     text: 'Pharmacists get low-stock alerts, expiry monitoring, demand forecasts and management reports.',
   },
@@ -69,7 +69,7 @@ export default function LandingPage() {
             </p>
             <form className="hero-search" onSubmit={submit} role="search">
               <div className="search-input-wrap">
-                <span className="search-icon" aria-hidden="true">🔎</span>
+                <span className="search-icon" aria-hidden="true">Search</span>
                 <label className="sr-only" htmlFor="hero-search-input">Search medicines</label>
                 <input
                   id="hero-search-input"
@@ -86,9 +86,9 @@ export default function LandingPage() {
               <Link to="/register" className="btn btn-ghost">Create a free account</Link>
             </div>
             <div className="hero-trust">
-              <span>✓ Licensed pharmacies only</span>
-              <span>✓ Pharmacist-reviewed prescriptions</span>
-              <span>✓ Ghana Data Protection Act 843</span>
+              <span>[x] Licensed pharmacies only</span>
+              <span>[x] Pharmacist-reviewed prescriptions</span>
+              <span>[x] Ghana Data Protection Act 843</span>
             </div>
           </div>
           <div className="card">
@@ -173,10 +173,10 @@ export default function LandingPage() {
                 </div>
                 <p className="small muted mt-1">{pharmacy.address}</p>
                 <p className="small mb-0">
-                  <span aria-hidden="true">📍</span> {pharmacy.landmark || pharmacy.community}
+                  <span aria-hidden="true">Pin</span> {pharmacy.landmark || pharmacy.community}
                 </p>
                 <p className="small mb-0">
-                  <span aria-hidden="true">📞</span> {pharmacy.phone}
+                  <span aria-hidden="true">Phone</span> {pharmacy.phone}
                 </p>
               </div>
             </article>

@@ -72,7 +72,7 @@ export function ErrorState({ error, retry }) {
 export function EmptyState({ title, children, action }) {
   return (
     <div className="empty-state">
-      <div className="empty-icon" aria-hidden="true">✚</div>
+      <div className="empty-icon" aria-hidden="true">+</div>
       <h2>{title}</h2>
       {children && <p>{children}</p>}
       {action}
@@ -135,7 +135,7 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
         <div className="modal-header">
           <h2 id={titleId}>{title}</h2>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close dialog">
-            ✕
+            x
           </button>
         </div>
         <div className="modal-body">{children}</div>

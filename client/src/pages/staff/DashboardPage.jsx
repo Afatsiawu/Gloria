@@ -34,20 +34,20 @@ export default function DashboardPage() {
       />
 
       <div className="stat-grid">
-        <StatCard label="Sales today" value={formatMoney(data.sales.today)} hint={`${data.sales.orders_today} paid order(s)`} tone="success" icon="💰" />
-        <StatCard label="Sales this month" value={formatMoney(data.sales.month)} hint="Excludes cancelled orders" icon="📈" />
-        <StatCard label="Active orders" value={data.orders.active} hint="Placed through out for delivery" tone="info" icon="📦" />
-        <StatCard label="Prescriptions waiting" value={data.orders.pending_prescriptions} hint="Needs pharmacist review" tone={data.orders.pending_prescriptions ? 'warning' : 'success'} icon="📋" />
-        <StatCard label="Low stock lines" value={data.stock.low_stock} hint={`${data.stock.out_of_stock ?? 0} out of stock`} tone={data.stock.low_stock ? 'danger' : 'success'} icon="⚠️" />
-        <StatCard label="Expiring batches" value={data.stock.expiring_batches} hint={`${data.stock.expired_batches ?? 0} already expired`} tone={data.stock.expiring_batches ? 'warning' : 'success'} icon="📅" />
+        <StatCard label="Sales today" value={formatMoney(data.sales.today)} hint={`${data.sales.orders_today} paid order(s)`} tone="success" icon="Money" />
+        <StatCard label="Sales this month" value={formatMoney(data.sales.month)} hint="Excludes cancelled orders" icon="ChartUp" />
+        <StatCard label="Active orders" value={data.orders.active} hint="Placed through out for delivery" tone="info" icon="Box" />
+        <StatCard label="Prescriptions waiting" value={data.orders.pending_prescriptions} hint="Needs pharmacist review" tone={data.orders.pending_prescriptions ? 'warning' : 'success'} icon="Clipboard" />
+        <StatCard label="Low stock lines" value={data.stock.low_stock} hint={`${data.stock.out_of_stock ?? 0} out of stock`} tone={data.stock.low_stock ? 'danger' : 'success'} icon="Warning" />
+        <StatCard label="Expiring batches" value={data.stock.expiring_batches} hint={`${data.stock.expired_batches ?? 0} already expired`} tone={data.stock.expiring_batches ? 'warning' : 'success'} icon="Calendar" />
       </div>
 
       {isAdmin && data.system && (
         <div className="grid grid-4 mt-2">
-          <StatCard label="Pharmacies" value={data.system.pharmacies} icon="🏥" />
-          <StatCard label="Active users" value={data.system.users} icon="👥" />
-          <StatCard label="Customers" value={data.system.customers} icon="🧑" />
-          <StatCard label="Medicines" value={data.system.medicines} icon="💊" />
+          <StatCard label="Pharmacies" value={data.system.pharmacies} icon="Hospital" />
+          <StatCard label="Active users" value={data.system.users} icon="Users" />
+          <StatCard label="Customers" value={data.system.customers} icon="Person" />
+          <StatCard label="Medicines" value={data.system.medicines} icon="Pill" />
         </div>
       )}
 

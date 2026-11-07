@@ -57,7 +57,7 @@ export default function SearchPage() {
         <div className="card-body">
           <form onSubmit={submit} role="search">
             <div className="search-input-wrap">
-              <span className="search-icon" aria-hidden="true">🔎</span>
+              <span className="search-icon" aria-hidden="true">Search</span>
               <label className="sr-only" htmlFor="search-input">Search medicines</label>
               <input
                 id="search-input"

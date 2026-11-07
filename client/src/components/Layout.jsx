@@ -115,7 +115,7 @@ export default function Layout() {
             aria-controls="mobile-nav"
             onClick={() => setOpen((v) => !v)}
           >
-            <span aria-hidden="true">{open ? '✕' : '☰'}</span>
+            <span aria-hidden="true">{open ? 'x' : 'menu'}</span>
             <span className="sr-only">{open ? 'Close menu' : 'Open menu'}</span>
           </button>
           <nav className="desktop-nav" aria-label="Main navigation">
@@ -141,7 +141,7 @@ export default function Layout() {
             {user ? (
               <>
                 <Link to="/notifications" className="icon-btn" aria-label="Notifications" title="Notifications">
-                  <span aria-hidden="true">🔔</span>
+                  <span aria-hidden="true">Bell</span>
                 </Link>
                 <Link to={role === 'customer' ? '/account' : roleHome(role)} className="user-chip">
                   <span className="avatar" aria-hidden="true">{user.full_name?.charAt(0) || 'U'}</span>
