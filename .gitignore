@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.env
+*.env.local
+server/data/*.db
+server/data/*.db-*
+server/uploads/
+server/backups/
+server/reports/
+coverage/
+server/src/test/tmp/
+.DS_Store
+*.log
