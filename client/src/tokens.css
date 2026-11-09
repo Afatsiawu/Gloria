@@ -1,0 +1,197 @@
+/* Design tokens: Docta-inspired purple + soft peach system.
+   Every colour, size, radius and shadow is defined here once. */
+
+:root {
+  color-scheme: light;
+
+  /* ---------------------------------------------------------------
+     Colour — Primary "Docta Purple"
+     --------------------------------------------------------------- */
+  --color-primary-50: #f4f0fa;
+  --color-primary-100: #e6ddf3;
+  --color-primary-200: #cdbde6;
+  --color-primary-300: #ae97d3;
+  --color-primary-400: #8d72bc;
+  --color-primary-600: #6d4fa3;
+  --color-primary-700: #583f8c;
+  --color-primary-800: #46326f;
+
+  /* Secondary "Deep Indigo" */
+  --color-indigo-700: #2e2566;
+  --color-indigo-800: #241c57;
+  --color-indigo-900: #1c1448;
+
+  /* Tertiary "Soft Peach" */
+  --color-peach-50: #fff9f4;
+  --color-peach-100: #fdeee2;
+  --color-peach-200: #fbdcc5;
+  --color-peach-300: #f6c2a0;
+  --color-peach-700: #9a4a17;
+
+  /* Accent — Sky Blue */
+  --color-sky-100: #e3eefa;
+  --color-sky-300: #a7c7ec;
+  --color-sky-500: #5e92d1;
+  --color-sky-700: #2f5e9e;
+
+  /* Accent — Rose */
+  --color-rose-100: #fce8ec;
+  --color-rose-300: #f6b8c4;
+  --color-rose-500: #e07a92;
+  --color-rose-700: #a63a56;
+
+  /* Neutrals "Soft Lilac Grey" */
+  --color-white: #ffffff;
+  --color-neutral-25: #fbfafd;
+  --color-neutral-50: #f6f4fa;
+  --color-neutral-100: #e9e4f0;
+  --color-neutral-200: #d8d1e4;
+  --color-neutral-500: #8a87a0;
+  --color-neutral-600: #5e5c78;
+  --color-neutral-800: #2e2b45;
+  --color-neutral-900: #1c1448;
+
+  /* Semantic (text on tint) */
+  --color-success: #1b7550;
+  --color-success-tint: #e8f6ef;
+  --color-warning: #9a4a17;
+  --color-warning-tint: #fef1e6;
+  --color-danger: #b3261e;
+  --color-danger-tint: #fdecea;
+  --color-info: #2f5e9e;
+  --color-info-tint: #e3eefa;
+
+  /* Roles */
+  --color-page: var(--color-white);
+  --color-surface: var(--color-white);
+  --color-surface-subtle: var(--color-neutral-25);
+  --color-text: var(--color-indigo-900);
+  --color-text-body: var(--color-neutral-800);
+  --color-text-muted: var(--color-neutral-600);
+  --color-border: var(--color-neutral-100);
+  --color-control-border: var(--color-neutral-500);
+  --color-focus: var(--color-primary-600);
+  --color-focus-on-dark: var(--color-white);
+
+  /* Charts */
+  --color-chart-1: var(--color-primary-600);
+  --color-chart-2: var(--color-sky-500);
+  --color-chart-3: var(--color-rose-500);
+  --color-chart-4: var(--color-peach-300);
+  --color-chart-grid: var(--color-neutral-100);
+
+  /* ---------------------------------------------------------------
+     Typography
+     --------------------------------------------------------------- */
+  --font-heading: 'Sora', 'Sora Fallback', 'DM Sans', system-ui, -apple-system, 'Segoe UI', Roboto,
+    Arial, sans-serif;
+  --font-body: 'DM Sans', 'DM Sans Fallback', system-ui, -apple-system, 'Segoe UI', Roboto, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --text-display: clamp(2rem, 1.35rem + 3.2vw, 3rem); /* 32 → 48 */
+  --text-h1: clamp(1.75rem, 1.5rem + 1.25vw, 2.25rem); /* 28 → 36 */
+  --text-h2: clamp(1.375rem, 1.22rem + 0.75vw, 1.75rem); /* 22 → 28 */
+  --text-h3: clamp(1.125rem, 1.06rem + 0.3vw, 1.25rem); /* 18 → 20 */
+  --text-h4: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem); /* 16 → 17 */
+  --text-body-lg: 1.125rem;
+  --text-body: 1rem;
+  --text-body-sm: 0.875rem;
+  --text-caption: 0.8125rem;
+  --text-overline: 0.75rem;
+  --text-button: 1rem;
+  --text-price: clamp(1.125rem, 1.06rem + 0.3vw, 1.25rem);
+
+  --leading-display: 1.1;
+  --leading-h1: 1.15;
+  --leading-heading: 1.25;
+  --leading-snug: 1.35;
+  --leading-body: 1.6;
+
+  --tracking-heading: -0.015em;
+  --tracking-overline: 0.04em;
+
+  --measure: 70ch;
+
+  /* ---------------------------------------------------------------
+     Spacing
+     --------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --space-9: 96px;
+
+  --section-space: clamp(64px, 8vw, 96px);
+  --card-padding: 16px;
+  --card-padding-lg: 24px;
+
+  /* Layout */
+  --container: 1200px;
+  --container-staff: 1440px;
+  --container-narrow: 720px;
+  --gutter: 16px;
+  --gutter-md: 24px;
+  --gutter-lg: 32px;
+
+  /* Shape */
+  --radius-pill: 999px;
+  --radius-chip: 999px;
+  --radius-input: 12px;
+  --radius-card: 16px;
+  --radius-panel: 24px;
+
+  /* Elevation */
+  --elevation-1: 0 1px 3px rgba(28, 20, 72, 0.06);
+  --elevation-2: 0 8px 24px rgba(28, 20, 72, 0.1);
+  --elevation-3: 0 16px 40px rgba(28, 20, 72, 0.14);
+
+  /* Motion */
+  --duration: 150ms;
+  --ease-out: ease-out;
+
+  /* Layers */
+  --z-header: 100;
+  --z-menu: 1000;
+  --z-toast: 1100;
+
+  /* Heights */
+  --header-height: 64px;
+  --bottom-nav-height: 64px;
+
+  /* ---------------------------------------------------------------
+     Legacy aliases — remapped to the new system so every existing
+     selector adopts the Docta palette. Removed as screens are rebuilt.
+     --------------------------------------------------------------- */
+  --accent: var(--color-primary-600);
+  --accent-dark: var(--color-primary-700);
+  --accent-soft: var(--color-primary-50);
+  --amber: var(--color-warning);
+  --amber-soft: var(--color-warning-tint);
+  --bg: var(--color-neutral-50);
+  --surface: var(--color-surface);
+  --text: var(--color-indigo-900);
+  --muted: var(--color-text-muted);
+  --line: var(--color-border);
+  --danger: var(--color-danger);
+  --danger-soft: var(--color-danger-tint);
+  --skeleton: var(--color-neutral-50);
+  --grey: var(--color-neutral-50);
+
+  --radius: var(--radius-input);
+  --shadow-card: var(--elevation-1);
+  --shadow-hover: var(--elevation-2);
+  --ease: var(--duration) var(--ease-out);
+
+  --max: var(--container);
+  --font: var(--font-body);
+}
