@@ -72,6 +72,7 @@
   --color-control-border: var(--color-neutral-500);
   --color-focus: var(--color-primary-600);
   --color-focus-on-dark: var(--color-white);
+  --color-overlay: rgba(28, 20, 72, 0.45);
 
   /* Charts */
   --color-chart-1: var(--color-primary-600);

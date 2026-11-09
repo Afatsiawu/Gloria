@@ -1,12 +1,12 @@
 import { lazy, Suspense } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
+import { Loading } from './components/UI.jsx';
 import { useAuth, roleHome } from './context/AuthContext.jsx';
-import { Skeleton } from './components/UI.jsx';
 
-const LandingPage = lazy(() => import('./pages/LandingPage.jsx'));
-const SearchPage = lazy(() => import('./pages/SearchPage.jsx'));
+const HomePage = lazy(() => import('./pages/HomePage.jsx'));
+const MedicinesPage = lazy(() => import('./pages/MedicinesPage.jsx'));
 const MedicineDetailPage = lazy(() => import('./pages/MedicineDetailPage.jsx'));
 const LoginPage = lazy(() => import('./pages/LoginPage.jsx'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage.jsx'));
@@ -16,6 +16,7 @@ const CartPage = lazy(() => import('./pages/CartPage.jsx'));
 const CheckoutPage = lazy(() => import('./pages/CheckoutPage.jsx'));
 const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx'));
 const OrderTrackingPage = lazy(() => import('./pages/OrderTrackingPage.jsx'));
+const TrackPage = lazy(() => import('./pages/TrackPage.jsx'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx'));
 const RefillsPage = lazy(() => import('./pages/RefillsPage.jsx'));
 const NotificationsPage = lazy(() => import('./pages/NotificationsPage.jsx'));
@@ -32,52 +33,65 @@ const ZonesPage = lazy(() => import('./pages/staff/ZonesPage.jsx'));
 const StaffReportsPage = lazy(() => import('./pages/staff/ReportsPage.jsx'));
 const RiderPage = lazy(() => import('./pages/RiderPage.jsx'));
 const UsersPage = lazy(() => import('./pages/admin/UsersPage.jsx'));
-const MedicinesPage = lazy(() => import('./pages/admin/MedicinesPage.jsx'));
+const AdminMedicinesPage = lazy(() => import('./pages/admin/MedicinesPage.jsx'));
 const AnalyticsPage = lazy(() => import('./pages/admin/AnalyticsPage.jsx'));
 const AuditPage = lazy(() => import('./pages/admin/AuditPage.jsx'));
 const SettingsPage = lazy(() => import('./pages/admin/SettingsPage.jsx'));
 const OutboxPage = lazy(() => import('./pages/admin/OutboxPage.jsx'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
+const StyleGuidePage = import.meta.env.DEV ? lazy(() => import('./pages/StyleGuidePage.jsx')) : null;
 
 function HomeRedirect() {
   const { user, loading } = useAuth();
   if (loading) return null;
-  return user ? <Navigate to={roleHome(user.role)} replace /> : <LandingPage />;
+  if (user && user.role !== 'customer') return <Navigate to={roleHome(user.role)} replace />;
+  return <HomePage />;
+}
+
+function SearchRedirect() {
+  const location = useLocation();
+  return <Navigate to={`/medicines${location.search}`} replace />;
+}
+
+function OrderRoute() {
+  const { reference } = useParams();
+  const { user, loading } = useAuth();
+  const isAccountOrder = /^\d+$/.test(reference || '');
+  if (!isAccountOrder) return <TrackPage />;
+  if (loading) return null;
+  if (!user) return <Navigate to="/login" replace state={{ from: `/orders/${reference}` }} />;
+  return <OrderTrackingPage />;
 }
 
 function Fallback() {
-  return (
-    <div className="card">
-      <div className="card-body">
-        <Skeleton lines={5} />
-      </div>
-    </div>
-  );
+  return <Loading text="Loading this page" />;
 }
 
 export default function App() {
   return (
-    <Suspense fallback={<div className="container page"><Fallback /></div>}>
+    <Suspense fallback={<div className="wrap"><Fallback /></div>}>
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<HomeRedirect />} />
-          <Route path="search" element={<SearchPage />} />
+          <Route path="search" element={<SearchRedirect />} />
+          <Route path="medicines" element={<MedicinesPage />} />
           <Route path="medicines/:id" element={<MedicineDetailPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="register" element={<RegisterPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="cart" element={<CartPage />} />
+          <Route path="checkout" element={<CheckoutPage />} />
+          <Route path="track" element={<TrackPage />} />
+          <Route path="orders/:reference" element={<OrderRoute />} />
 
           <Route element={<ProtectedRoute roles={['customer']} />}>
-            <Route path="cart" element={<CartPage />} />
-            <Route path="checkout" element={<CheckoutPage />} />
             <Route path="orders" element={<OrdersPage />} />
             <Route path="account" element={<ProfilePage />} />
             <Route path="refills" element={<RefillsPage />} />
           </Route>
 
           <Route element={<ProtectedRoute />}>
-            <Route path="orders/:id" element={<OrderTrackingPage />} />
             <Route path="notifications" element={<NotificationsPage />} />
           </Route>
 
@@ -97,7 +111,7 @@ export default function App() {
 
           <Route element={<ProtectedRoute roles={['admin']} />}>
             <Route path="admin/users" element={<UsersPage />} />
-            <Route path="admin/medicines" element={<MedicinesPage />} />
+            <Route path="admin/medicines" element={<AdminMedicinesPage />} />
             <Route path="admin/analytics" element={<AnalyticsPage />} />
             <Route path="admin/audit" element={<AuditPage />} />
             <Route path="admin/settings" element={<SettingsPage />} />
@@ -109,6 +123,7 @@ export default function App() {
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
+          {StyleGuidePage && <Route path="styleguide" element={<StyleGuidePage />} />}
         </Route>
       </Routes>
     </Suspense>

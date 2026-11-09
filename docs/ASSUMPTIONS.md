@@ -88,6 +88,13 @@ This capstone project was built autonomously from a product specification; where
 - Font payload 70 KB (Sora 33 KB + DM Sans 37 KB), under the 80 KB target.
 - No old teal/blue/mint hex remains in `styles.css`; the two ad-hoc input focus glows were replaced with primary-100 and danger-tint tokens.
 
+### Verification of Step 2
+
+- The styleguide at `/styleguide` was rendered at 320, 360, 390, 414, 768, 1024, 1280, 1440 and 1920px with zero horizontal overflow. It is guarded by `import.meta.env.DEV`; the production build contains no styleguide chunk.
+- The status map now follows the brief: `placed` = info, `awaiting_prescription` = warning, `verified` = primary, `ready`/`completed` = success, `out_for_delivery` = info (blue), `cancelled` = danger. The two assertions in `format.test.js` that encoded the previous neutral-placed mapping were updated to the new documented map; the rest of the suite is unchanged and all 21 tests pass.
+- `PhoneMock` uses seeded names only (Panadol 500 mg, Brufen 400 mg) with their seeded prices; the tracking screen shows status labels and no invented reference, rating, statistic or date.
+- The minified stylesheet is about 59 KB at this stage. It is above the 40 KB target because the old screen CSS is still present while screens are migrated; Step 9 removes unused selectors after the last page is rebuilt.
+
 ## Deviations from the original specification
 
 1. **bcryptjs** used instead of native `bcrypt` to avoid native compilation issues in the delivery environment.

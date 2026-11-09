@@ -1,32 +1,27 @@
 import { useEffect, useId, useRef } from 'react';
-import { statusLabel, statusTone, titleCase } from '../utils/format.js';
+import { Link } from 'react-router-dom';
+import { statusLabel, statusTone, formatMoney } from '../utils/format.js';
 
 const ICON_PATHS = {
-  Search: ['M10.5 2.5a7.5 7.5 0 1 0 5.25 13.04l4.25 4.25'],
-  Clipboard: ['M9 3h6a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z', 'M9 8h6', 'M9 13h6'],
-  Delivery: ['M1 8h14v8H1z', 'M15 12h4l2 2v3H15z', 'M4 20v2', 'M17 20v2'],
-  Card: ['M2 6h20a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1z'],
-  Bell: ['M18 8a6 6 0 0 0-12 0c0 7-2.5 9-2.5 9h17S18 15 18 8', 'M13.2 21a2.1 2.1 0 0 1-4.2 0'],
-  Chart: ['M4 20v-7', 'M10 20V4', 'M16 20v-4', 'M22 20H2'],
-  ChartUp: ['M3 3v16h16', 'm9 15 3-3 3 3 5-6'],
-  Hospital: ['M12 4v16', 'M4 12h16'],
-  Users: ['M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z', 'M22 21v-2a4 4 0 0 0-3-3.87', 'M16 3.13a4 4 0 0 1 0 7.75'],
-  Person: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 7a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
-  Pill: ['M12 2.5c3.2 0 5.5 2.3 5.5 5.5v7c0 3.2-2.3 5.5-5.5 5.5s-5.5-2.3-5.5-5.5v-7c0-3.2 2.3-5.5 5.5-5.5z', 'M12 9v6'],
-  Warning: ['M12 3 22 20H2L12 3z', 'M12 10v5', 'M12 17v.01'],
-  Calendar: ['M3 4h18', 'M5 2v4', 'M19 2v4', 'M4 10h16', 'M5 20h14', 'M7 16v4', 'M17 16v4'],
-  Box: ['M21 8 12 3 3 8v8l9 5 9-5V8z', 'M3 8l9 5 9-5', 'M12 13v8'],
-  Money: ['M20 7H5a2 2 0 0 1 0-4h14v4z', 'M2 5v14a2 2 0 0 0 2 2h16v-5H4a2 2 0 0 1 0-4z'],
-  Receipt: ['M5 2h14v20l-2-1.5L9 19l-2 1.5z', 'M9 7h6', 'M9 12h6'],
-  Check: ['M20 6 9 17l-5-5'],
-  OK: ['M20 6 9 17l-5-5'],
-  Package: ['M16.5 9.4 7.55 4.24', 'M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 1 2 0l7-4A2 2 0 0 0 21 16z', 'M3.3 7 12 12l8.7-5'],
-  Pin: ['M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z', 'M12 12v6'],
-  Phone: ['M5 4h4l2 5-2.5 1.5a12 12 0 0 0 6 6L13 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z'],
+  Home: ['M3 10.5 12 3l9 7.5', 'M5.5 9.5V21h13V9.5'],
+  Search: ['M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14z', 'M16.2 16.2 20.5 20.5'],
+  Cart: [
+    'M3 4h2l2.4 10.4a1 1 0 0 0 1 .8h8.3a1 1 0 0 0 1-.8L19 7H6',
+    'M9 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+    'M17 20a1 1 0 1 0 0-2 1 1 0 0 0 0 2',
+  ],
+  User: ['M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z'],
+  Menu: ['M4 7h16', 'M4 12h16', 'M4 17h16'],
+  Close: ['M6 6l12 12', 'M18 6 6 18'],
+  Cross: ['M9 3h6v6h6v6h-6v6H9v-6H3V9h6z'],
+  Check: ['M5 12.5 10 17.5 19 7'],
+  Phone: ['M6.5 3.5h3l1.5 4-2 1.5a12 12 0 0 0 6 6l1.5-2 4 1.5v3a2 2 0 0 1-2.2 2A17 17 0 0 1 4.5 5.7a2 2 0 0 1 2-2.2z'],
+  Package: ['M4 8.5 12 4l8 4.5v7L12 20l-8-4.5z', 'M4 8.5 12 13l8-4.5', 'M12 13v7'],
+  Warning: ['M12 4 3.5 20h17z', 'M12 10v4', 'M12 17.2h.01'],
 };
 
-export function Icon({ name, size = 18, className = '' }) {
-  const paths = ICON_PATHS[name] || ICON_PATHS.Check;
+export function Icon({ name, size = 20, className = '' }) {
+  const paths = ICON_PATHS[name] || ICON_PATHS.Search;
   return (
     <svg
       className={className}
@@ -35,7 +30,7 @@ export function Icon({ name, size = 18, className = '' }) {
       height={size}
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.8"
       strokeLinecap="round"
       strokeLinejoin="round"
       aria-hidden="true"
@@ -48,80 +43,190 @@ export function Icon({ name, size = 18, className = '' }) {
   );
 }
 
-export function PageHeader({ eyebrow, title, subtitle, actions }) {
+export function Button({ variant = 'primary', className = '', type = 'button', ...props }) {
+  return <button type={type} className={`btn btn-${variant} ${className}`.trim()} {...props} />;
+}
+
+export function Input({ className = '', ...props }) {
+  return <input className={className} {...props} />;
+}
+
+export function Select({ className = '', children, ...props }) {
   return (
-    <div className="page-header">
+    <select className={className} {...props}>
+      {children}
+    </select>
+  );
+}
+
+export function Field({ label, htmlFor, hint, error, required, children, className = '' }) {
+  return (
+    <div className={`field ${error ? 'field-error' : ''} ${className}`.trim()}>
+      {label && (
+        <label htmlFor={htmlFor}>
+          {label}
+          {required && <span aria-hidden="true"> *</span>}
+        </label>
+      )}
+      {children}
+      {hint && <p className="hint">{hint}</p>}
+      {error && <p className="error-text">{error}</p>}
+    </div>
+  );
+}
+
+export function Alert({ tone = 'info', children }) {
+  return (
+    <div className={`alert alert-${tone}`} role={tone === 'error' ? 'alert' : 'status'}>
+      {children}
+    </div>
+  );
+}
+
+export function PageTitle({ title, subtitle, actions }) {
+  return (
+    <div className="page-title">
       <div>
-        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
         <h1>{title}</h1>
-        {subtitle && <p className="page-subtitle">{subtitle}</p>}
+        {subtitle && <p>{subtitle}</p>}
       </div>
       {actions && <div className="page-actions">{actions}</div>}
     </div>
   );
 }
 
-export function Badge({ children, tone = 'neutral' }) {
-  return <span className={`badge badge-${tone}`}>{children}</span>;
+export function Badge({ children, tone = 'neutral', className = '' }) {
+  return <span className={`badge badge-${tone} ${className}`.trim()}>{children}</span>;
 }
 
 export function StatusBadge({ status }) {
   return <Badge tone={statusTone(status)}>{statusLabel(status)}</Badge>;
 }
 
-export function Skeleton({ lines = 3, className = '' }) {
-  return (
-    <div className={`skeleton-stack ${className}`} aria-hidden="true">
-      {Array.from({ length: lines }).map((_, i) => (
-        <div key={i} className={`skeleton skeleton-line ${i === 0 ? 'skeleton-title' : ''}`} />
-      ))}
-    </div>
-  );
+export function StatusChip({ tone = 'neutral', children }) {
+  return <span className={`status-chip status-chip-${tone}`}>{children}</span>;
 }
 
-export function SkeletonCards({ count = 3 }) {
-  return (
-    <div className="grid grid-3" aria-label="Loading" aria-busy="true">
-      {Array.from({ length: count }).map((_, i) => (
-        <div className="card" key={i}>
-          <div className="card-body">
-            <Skeleton lines={4} />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
+export function StockChip({ stock }) {
+  const quantity = Number(stock) || 0;
+  if (quantity <= 0) return <StatusChip tone="danger">Out of stock</StatusChip>;
+  if (quantity <= 10) return <StatusChip tone="warning">Low stock</StatusChip>;
+  return <StatusChip tone="success">In stock</StatusChip>;
 }
 
-export function ErrorState({ error, retry }) {
+export function Toast({ tone = 'success', children, onClose, className = '' }) {
+  if (!children) return null;
   return (
-    <div className="alert alert-error" role="alert">
-      <div>
-        <strong>We could not load this.</strong>
-        <p>{error?.message || 'Check your connection and try again.'}</p>
-        {error?.details?.length > 0 && (
-          <ul className="error-details">
-            {error.details.map((detail, i) => (
-              <li key={i}>{detail.message || detail.path}</li>
-            ))}
-          </ul>
-        )}
-      </div>
-      {retry && (
-        <button type="button" className="btn btn-secondary btn-sm" onClick={retry}>
-          Retry
+    <div className={`toast toast-${tone} ${className}`.trim()} role="status">
+      <span>{children}</span>
+      {onClose && (
+        <button type="button" className="toast-close" aria-label="Dismiss message" onClick={onClose}>
+          <Icon name="Close" size={18} />
         </button>
       )}
     </div>
   );
 }
 
-export function EmptyState({ title, children, action }) {
+export function SectionBand({ tone = 'plain', className = '', id, children }) {
   return (
-    <div className="empty-state">
-      <div className="empty-icon" aria-hidden="true">
-        <Icon name="Package" size={24} />
+    <section id={id} className={`section-band section-band-${tone} ${className}`.trim()}>
+      {children}
+    </section>
+  );
+}
+
+export function Stepper({ steps = [], label = 'Order progress' }) {
+  return (
+    <ol className="stepper" aria-label={label}>
+      {steps.map((step) => (
+        <li key={step.key || step.label} className={`stepper-step ${step.state || 'todo'}`}>
+          <span className="stepper-dot" aria-hidden="true" />
+          <div className="stepper-body">
+            <strong>{step.label}</strong>
+            {step.time && <span className="stepper-time">{step.time}</span>}
+            {step.note && <p className="stepper-note">{step.note}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+export function DataTable({ columns, rows, rowKey = 'id', empty = 'Nothing here yet.' }) {
+  if (!rows?.length) return <p className="empty">{empty}</p>;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th key={column.key} scope="col" className={column.align === 'right' ? 'num' : ''}>
+                {column.label}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => {
+            const key = typeof rowKey === 'function' ? rowKey(row) : row[rowKey] ?? index;
+            return (
+              <tr key={key}>
+                {columns.map((column) => (
+                  <td
+                    key={column.key}
+                    data-label={column.label}
+                    className={column.align === 'right' ? 'num' : ''}
+                  >
+                    {column.render ? column.render(row) : row[column.key]}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+export function ProductCard({ medicine, onAdd, busy = false, added = false }) {
+  const name = medicine.brand_name;
+  const meta = [medicine.strength, medicine.dosage_form].filter(Boolean).join(' · ');
+  const inStock = Number(medicine.stock) > 0;
+  return (
+    <article className="product-card">
+      <div className="product-thumb" aria-hidden="true">
+        {medicine.image_path ? (
+          <img src={medicine.image_path} alt="" loading="lazy" />
+        ) : (
+          <span>{name.charAt(0)}</span>
+        )}
       </div>
+      <div className="product-body">
+        {Boolean(medicine.requires_prescription) && <span className="rx-tag">Prescription needed</span>}
+        <h3 className="product-name">
+          <Link to={`/medicines/${medicine.id}`}>{name}</Link>
+        </h3>
+        {meta && <p className="product-meta">{meta}</p>}
+        <div className="product-price-row">
+          <p className="product-price">{formatMoney(medicine.min_price)}</p>
+          <StockChip stock={medicine.stock} />
+        </div>
+        <Button className="btn-sm" onClick={() => onAdd(medicine)} disabled={!inStock || busy}>
+          {busy ? 'Please wait…' : added ? 'Added' : 'Add to cart'}
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+export function EmptyState({ title, children, action, icon = 'Search' }) {
+  return (
+    <div className="empty">
+      <span className="empty-mark" aria-hidden="true">
+        <Icon name={icon} size={26} />
+      </span>
       <h2>{title}</h2>
       {children && <p>{children}</p>}
       {action}
@@ -129,25 +234,84 @@ export function EmptyState({ title, children, action }) {
   );
 }
 
-export function Alert({ tone = 'info', children, role }) {
+export function ErrorState({ error, retry }) {
   return (
-    <div className={`alert alert-${tone}`} role={role || (tone === 'error' ? 'alert' : 'status')}>
-      {children}
+    <div className="empty" role="alert">
+      <span className="empty-mark empty-mark-warning" aria-hidden="true">
+        <Icon name="Warning" size={26} />
+      </span>
+      <h2>Something went wrong</h2>
+      <p>{error?.message || 'Could not load this. Check your connection and try again.'}</p>
+      {retry && (
+        <button type="button" className="btn btn-secondary" onClick={retry}>
+          Try again
+        </button>
+      )}
     </div>
   );
 }
 
-export function Field({ label, htmlFor, hint, error, required, children, className = '' }) {
+export function Loading({ text = 'Loading…' }) {
   return (
-    <div className={`field ${className}`}>
-      {label && (
-        <label htmlFor={htmlFor}>
-          {label} {required && <span className="required" aria-hidden="true">*</span>}
-        </label>
-      )}
-      {children}
-      {hint && <p className="hint">{hint}</p>}
-      {error && <p className="field-error">{error}</p>}
+    <div className="loading-skeleton" role="status">
+      <span className="sr-only">{text}</span>
+      <span className="skeleton skeleton-line" />
+      <span className="skeleton skeleton-line short" />
+      <span className="skeleton skeleton-block" />
+    </div>
+  );
+}
+
+export function Spinner({ label = 'Loading' }) {
+  return (
+    <span className="loading" role="status">
+      {label}
+    </span>
+  );
+}
+
+export function Pagination({ pagination, onPage }) {
+  if (!pagination || pagination.totalPages <= 1) return null;
+  return (
+    <nav className="pagination" aria-label="Pagination">
+      <button
+        type="button"
+        className="btn btn-sm"
+        disabled={pagination.page <= 1}
+        onClick={() => onPage(pagination.page - 1)}
+      >
+        Previous
+      </button>
+      <span>
+        Page {pagination.page} of {pagination.totalPages}
+      </span>
+      <button
+        type="button"
+        className="btn btn-sm"
+        disabled={pagination.page >= pagination.totalPages}
+        onClick={() => onPage(pagination.page + 1)}
+      >
+        Next
+      </button>
+    </nav>
+  );
+}
+
+export function Tabs({ tabs, active, onChange, label = 'Sections' }) {
+  return (
+    <div className="tabs" role="tablist" aria-label={label}>
+      {tabs.map((tab) => (
+        <button
+          key={tab.value}
+          type="button"
+          role="tab"
+          aria-selected={active === tab.value}
+          className={`tab ${active === tab.value ? 'active' : ''}`}
+          onClick={() => onChange(tab.value)}
+        >
+          {tab.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -183,8 +347,8 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
       >
         <div className="modal-header">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" className="icon-btn" onClick={onClose} aria-label="Close dialog">
-            x
+          <button type="button" className="modal-close" onClick={onClose}>
+            Close
           </button>
         </div>
         <div className="modal-body">{children}</div>
@@ -194,120 +358,6 @@ export function Modal({ open, onClose, title, children, footer, wide = false }) 
   );
 }
 
-export function Pagination({ pagination, onPage }) {
-  if (!pagination || pagination.totalPages <= 1) return null;
-  const { page, totalPages } = pagination;
-  const pages = [];
-  const start = Math.max(1, Math.min(page - 2, totalPages - 4));
-  for (let i = start; i <= Math.min(totalPages, start + 4); i += 1) pages.push(i);
-  return (
-    <nav className="pagination" aria-label="Pagination">
-      <button type="button" className="btn btn-ghost btn-sm" disabled={page <= 1} onClick={() => onPage(page - 1)}>
-        Previous
-      </button>
-      {pages.map((p) => (
-        <button
-          key={p}
-          type="button"
-          className={`page-btn ${p === page ? 'active' : ''}`}
-          aria-current={p === page ? 'page' : undefined}
-          onClick={() => onPage(p)}
-        >
-          {p}
-        </button>
-      ))}
-      <button
-        type="button"
-        className="btn btn-ghost btn-sm"
-        disabled={page >= totalPages}
-        onClick={() => onPage(page + 1)}
-      >
-        Next
-      </button>
-    </nav>
-  );
-}
-
-export function StatCard({ label, value, hint, tone = 'default', to, icon }) {
-  const content = (
-    <>
-      <div className="stat-top">
-        <span className="stat-label">{label}</span>
-        {icon && (
-          <span className="stat-icon" aria-hidden="true">
-            <Icon name={icon} size={18} />
-          </span>
-        )}
-      </div>
-      <strong className="stat-value">{value}</strong>
-      {hint && <span className="stat-hint">{hint}</span>}
-    </>
-  );
-  if (to) {
-    return (
-      <a className={`stat-card stat-${tone}`} href={to}>
-        {content}
-      </a>
-    );
-  }
-  return <div className={`stat-card stat-${tone}`}>{content}</div>;
-}
-
-export function Tabs({ tabs, active, onChange, label = 'Sections' }) {
-  return (
-    <div className="tabs" role="tablist" aria-label={label}>
-      {tabs.map((tab) => (
-        <button
-          key={tab.value}
-          type="button"
-          role="tab"
-          aria-selected={active === tab.value}
-          className={`tab ${active === tab.value ? 'active' : ''}`}
-          onClick={() => onChange(tab.value)}
-        >
-          {tab.label}
-          {tab.count !== undefined && <span className="tab-count">{tab.count}</span>}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-export function DefinitionList({ items }) {
-  return (
-    <dl className="definition-list">
-      {items.map((item) => (
-        <div key={item.label}>
-          <dt>{item.label}</dt>
-          <dd>{item.value}</dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
-export function RawJson({ label, value }) {
-  if (!value) return null;
-  return (
-    <details className="raw-json">
-      <summary>{label}</summary>
-      <pre>{value}</pre>
-    </details>
-  );
-}
-
-export function Spinner({ label = 'Loading' }) {
-  return (
-    <span className="spinner" role="status">
-      <span className="sr-only">{label}</span>
-    </span>
-  );
-}
-
-export function ToneText({ tone, children }) {
-  return <span className={`tone-${tone}`}>{children}</span>;
-}
-
 export function statusText(value) {
-  return titleCase(value);
+  return statusLabel(value);
 }

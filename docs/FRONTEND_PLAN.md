@@ -67,11 +67,12 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 - [x] `docs/DESIGN_SYSTEM.md` written with tokens, roles, status map and the WCAG contrast table.
 - [x] Verified 320–1920px: overflow 0 at every width, both fonts loaded, body white, headings indigo.
 
-### Step 2 — Shared components and styleguide
-- [ ] Restyle Button (pill; primary/secondary/quiet/danger), Input, Select, RadioCard, Checkbox, Card, StatusChip, Tag, Alert, Toast, Stepper, Pagination, Table/StackedList, Skeleton, EmptyState, PageTitle.
-- [ ] Add `PhoneMock`, `MiniCard`, `VisualFrame`; add dev-only `/styleguide` with every state and the three visuals.
-- [ ] Status map incl. verified = primary tint and out-for-delivery = blue; add badge/chip info and primary variants.
-- [ ] Every target ≥44px, inputs 48px, keyboard operable; styleguide renders at all widths.
+### Step 2 — Shared components and styleguide (complete)
+- [x] Buttons are pills with primary, secondary, quiet, danger, disabled and small states; inputs/selects are 48px with purple focus glow; RadioCard, Checkbox, Card, StatusChip, Tag, Alert, Toast, Stepper, Pagination, DataTable, Skeleton, EmptyState and PageTitle restyled.
+- [x] New `PhoneMock` (medicines and tracking screens), `MiniCard` and `VisualFrame` (peach/blue/rose circle or 24px panel, optional image) in `components/LandingVisuals.jsx`.
+- [x] Dev-only `/styleguide` shows every component, state and the three visuals; guarded with `import.meta.env.DEV` and absent from the production build.
+- [x] Status map updated: placed = info, verified = primary tint, out-for-delivery = blue; badge/chip info and primary variants added.
+- [x] All targets ≥44px, inputs 48px; overflow 0 at 320–1920px.
 
 ### Step 3 — Layout shells
 - [ ] Customer header (centred nav, outlined Login pill, cart dot, own-row search on phone), indigo footer with three columns, phone bottom nav, staff layout.

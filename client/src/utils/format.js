@@ -41,7 +41,8 @@ export const statusTone = (status) => {
   if (['completed', 'approved', 'success', 'ready', 'delivered', 'sent', 'active'].includes(status)) return 'success';
   if (['cancelled', 'rejected', 'failed', 'expired', 'suspended'].includes(status)) return 'danger';
   if (['awaiting_prescription', 'pending', 'queried', 'expiring', 'low'].includes(status)) return 'warning';
-  if (['out_for_delivery', 'picked_up', 'verified', 'cash_on_pickup', 'assigned'].includes(status)) return 'info';
+  if (['verified'].includes(status)) return 'primary';
+  if (['placed', 'out_for_delivery', 'picked_up', 'cash_on_pickup', 'assigned'].includes(status)) return 'info';
   return 'neutral';
 };
 

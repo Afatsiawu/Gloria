@@ -52,7 +52,8 @@ describe('format utilities', () => {
       expect(statusTone('cancelled')).toBe('danger');
       expect(statusTone('awaiting_prescription')).toBe('warning');
       expect(statusTone('out_for_delivery')).toBe('info');
-      expect(statusTone('placed')).toBe('neutral');
+      expect(statusTone('placed')).toBe('info');
+      expect(statusTone('verified')).toBe('primary');
     });
   });
 
