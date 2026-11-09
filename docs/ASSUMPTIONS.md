@@ -84,6 +84,8 @@ This capstone project was built autonomously from a product specification; where
 16. **Cart indicator.** The cart shows a small decorative purple dot when empty and a purple count badge when it holds items; both are anchored to the icon and the link has an accessible item-count label.
 17. **Staff shell dimensions.** The sidebar is 264px on white with a neutral-100 right border, overline group labels, a primary-50 active row and a 3px primary-600 left bar; Sign out is pinned to the bottom. The topbar is 64px and the content container is 1440px with 16/24/32px gutters. Below 1024px the sidebar is replaced by the same full-page menu used by the customer layout.
 18. **Bottom navigation.** It is 64px tall plus `env(safe-area-inset-bottom)`, white with a neutral-100 top border, purple-700 active label and a 3px purple indicator above the active item. The footer reserves extra bottom padding so the copyright never sits under it.
+19. **Home hero and browse sections.** The hero search is a 56px white pill (44px input and button plus 5px inset and 1px border) with a purple focus ring; both community cards carry a purple arrow circle. The decorative category orbit is hidden below 1024px so the six category rows get the full width; from 1024px it sits in a 440px left column. Category icon circles cycle purple-50, peach-100, sky-100 and rose-100 tints in list order.
+20. **How it works composition.** The band uses peach-50. On phone and tablet the three steps stack visual-first; from 1024px they alternate copy/visual with 24px panels (260px tall on phone, 300px from 1024px) and a dashed purple connector drawn behind them. The connectors are decorative and hidden below 1024px, where the stacked order keeps the sequence clear without them.
 
 ### Verification of Step 1
 
@@ -109,6 +111,15 @@ This capstone project was built autonomously from a product specification; where
 - **Mobile menu at 390px**: opens as `role="dialog" aria-modal="true"`, focus moves inside, body overflow becomes `hidden`, the history sentinel is set, the 44×44 close button closes it and restores overflow to `visible`. The staff menu opens from the staff topbar with the same lock, 52px links and primary-50 active row.
 - **Staff layout**: at 1280 and 1024px the sidebar is visible at 264px with a white background, neutral-100 right border, primary-50 active row and 3px purple left bar; at 768 and 390px the sidebar is hidden and the topbar shows the logo, user name and 44px menu button. Content uses the 1440px container with 32px gutters at 1024px and 16px at 390px.
 - **Build and tests**: production build succeeds and the client suite passes 21/21 after the layout changes.
+
+### Verification of Step 4
+
+- **Overflow**: 0px at 320, 360, 390, 414, 768, 1024, 1280, 1440 and 1920px; both hero mini cards stay inside the viewport at every width.
+- **Hero search**: 56px tall at every width (44px input and 44px button plus insets and border); input text is 16px; focusing the input turns the pill border `rgb(109,79,163)` with a primary-100 ring.
+- **Hero layout**: one column below 1024px with the phone visual capped at 440px and centred; two columns from 1024px (`404px 500px` at 1024, `580px 500px` at 1280+). Display heading resolves 32px at 320 and 48px from 1024px.
+- **Categories**: six rows after the API resolves; rows are 64px where the name fits and grow when it wraps at 320px; the orbit is `display: none` below 1024px and visible in a 440px column above.
+- **How it works**: band background `rgb(255,249,244)`; panel height 260px on phone/tablet and 300px from 1024px with 24px radius; copy/visual order swaps only on even rows from 1024px; connectors are `display: none` below 1024px.
+- **Build and tests**: production build succeeds and the client suite passes 21/21.
 
 ## Deviations from the original specification
 

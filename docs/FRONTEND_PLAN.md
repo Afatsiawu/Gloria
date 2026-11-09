@@ -79,10 +79,10 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 - [x] Restyle the full-page mobile menu only; behaviour unchanged. Close button 44px.
 - [x] Safe areas and `100dvh`; no overlap between header, bottom nav and sticky bars.
 
-### Step 4 — Home sections 1–3
-- [ ] Hero with phone mock, mini cards and community cards.
-- [ ] Category rows with tinted icon circles and counts.
-- [ ] Peach "How it works" band, zigzag steps, desktop dotted connectors, stacked visual-first on phone/tablet.
+### Step 4 — Home sections 1–3 (complete)
+- [x] Hero with phone mock, mini cards and community cards.
+- [x] Category rows with tinted icon circles and counts.
+- [x] Peach "How it works" band, zigzag steps, desktop dotted connectors, stacked visual-first on phone/tablet.
 
 ### Step 5 — Home sections 4–6, footer, image slots
 - [ ] Pharmacies grid 3/2/1, prescription section, rounded tracking band.
@@ -122,6 +122,9 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 | Footer | indigo-900 background, three columns from 768px, two at phone widths |
 | Mobile menu (390px) | dialog, scroll lock on/off, 44×44 close, focus inside, history sentinel, closes on route and Escape |
 | Staff shell | sidebar 264px from 1024px, active primary-50 with 3px purple bar; topbar 64px |
+| Home hero | search pill 56px (44px input/button), purple focus ring, two columns from 1024px, mini cards inside the viewport at 320–1920px |
+| Home categories | six 64px+ rows; orbit visible only from 1024px in a 440px column |
+| How it works | peach-50 band; 260px panels on phone, 300px from 1024px; zigzag and dashed connectors only from 1024px |
 
 ## 7. Risks
 

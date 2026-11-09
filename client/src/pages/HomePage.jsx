@@ -2,20 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useFetch, usePageTitle } from '../hooks/useApi.js';
 import { ErrorState, Icon, Loading, SectionBand } from '../components/UI.jsx';
+import { MiniCard, PhoneMock, VisualFrame } from '../components/LandingVisuals.jsx';
 
 const COMMUNITIES = ['Doryumu', 'Kordibe'];
-
-function HeroPattern() {
-  return (
-    <svg className="hero-pattern" viewBox="0 0 220 220" aria-hidden="true" focusable="false">
-      <g fill="none" stroke="currentColor" strokeWidth="5" strokeLinejoin="round">
-        <path d="M78 18h26v34h34v26h-34v34H78V78H44V52h34z" />
-        <rect x="120" y="120" width="82" height="40" rx="20" transform="rotate(-28 161 140)" />
-        <path d="M139 132l44 24" />
-      </g>
-    </svg>
-  );
-}
 
 export default function HomePage() {
   usePageTitle('PharmaLink');
@@ -49,89 +38,223 @@ export default function HomePage() {
   return (
     <div className="home-page">
       <SectionBand tone="hero" className="home-hero">
-        <HeroPattern />
-        <div className="home-hero-inner">
-          <h1>Order medicines from pharmacies in Doryumu and Kordibe</h1>
-          <p className="home-lede">Search for a medicine, compare pharmacies and place your order. No account needed.</p>
-          <form className="home-search" role="search" onSubmit={search}>
-            <label className="sr-only" htmlFor="home-search">
-              Search medicines
-            </label>
-            <input
-              id="home-search"
-              value={term}
-              onChange={(event) => setTerm(event.target.value)}
-              placeholder="Search medicines"
-              autoComplete="off"
-            />
-            <button type="submit" className="btn btn-primary">
-              Search
-            </button>
-          </form>
-          <div className="community-cards">
-            {COMMUNITIES.map((community) => {
-              const count = communityCount(community);
-              return (
-                <Link key={community} to={`/medicines?community=${community}`} className="community-card">
-                  <span className="community-name">{community}</span>
-                  <span className="community-count">
-                    {count > 0 ? `${count} pharmac${count === 1 ? 'y' : 'ies'}` : 'View medicines'}
-                  </span>
-                  <span className="community-arrow" aria-hidden="true">
-                    →
-                  </span>
-                </Link>
-              );
-            })}
+        <div className="home-hero-grid">
+          <div className="home-hero-copy">
+            <h1>Order medicines from pharmacies in Doryumu and Kordibe</h1>
+            <p className="home-lede">
+              Search for a medicine, compare pharmacies and place your order. No account needed.
+            </p>
+            <form className="home-search" role="search" onSubmit={search}>
+              <span className="home-search-icon" aria-hidden="true">
+                <Icon name="Search" size={20} />
+              </span>
+              <label className="sr-only" htmlFor="home-search">
+                Search medicines
+              </label>
+              <input
+                id="home-search"
+                value={term}
+                onChange={(event) => setTerm(event.target.value)}
+                placeholder="Search medicines"
+                autoComplete="off"
+              />
+              <button type="submit" className="btn btn-primary">
+                Search
+              </button>
+            </form>
+            <div className="community-cards">
+              {COMMUNITIES.map((community) => {
+                const count = communityCount(community);
+                return (
+                  <Link key={community} to={`/medicines?community=${community}`} className="community-card">
+                    <span className="community-name">{community}</span>
+                    <span className="community-count">
+                      {count > 0 ? `${count} pharmac${count === 1 ? 'y' : 'ies'}` : 'View medicines'}
+                    </span>
+                    <span className="community-arrow" aria-hidden="true">
+                      <Icon name="ArrowRight" size={16} />
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+          <div className="home-hero-visual" aria-hidden="true">
+            <VisualFrame tone="peach" shape="circle" className="hero-frame">
+              <PhoneMock variant="medicines" className="hero-phone" />
+            </VisualFrame>
+            <MiniCard className="hero-mini hero-mini-stock">
+              <span className="mini-dot" />
+              <span>
+                <strong>In stock</strong>
+                <span className="mini-label">Panadol 500 mg · GHS 5.00</span>
+              </span>
+            </MiniCard>
+            <MiniCard className="hero-mini hero-mini-ready">
+              <Icon name="Package" size={18} />
+              <span>
+                <strong>Ready</strong>
+                <span className="mini-label">Doryumu Community Pharmacy</span>
+              </span>
+            </MiniCard>
           </div>
         </div>
       </SectionBand>
 
-      <SectionBand tone="white" className="home-section" id="how-it-works">
-        <h2>How it works</h2>
-        <ol className="steps">
-          <li className="step-card">
-            <span className="step-number" aria-hidden="true">
-              1
-            </span>
-            <span>Find your medicine.</span>
-          </li>
-          <li className="step-card">
-            <span className="step-number" aria-hidden="true">
-              2
-            </span>
-            <span>Place your order, no account needed.</span>
-          </li>
-          <li className="step-card">
-            <span className="step-number" aria-hidden="true">
-              3
-            </span>
-            <span>Pick it up or get it delivered.</span>
-          </li>
-        </ol>
+      <SectionBand tone="white" className="home-section home-categories" id="categories">
+        <div className="categories-grid">
+          <div className="categories-visual" aria-hidden="true">
+            <VisualFrame tone="blue" shape="circle" className="categories-frame">
+              <div className="category-orbit">
+                {[0, 1, 2, 3].map((index) => (
+                  <span className="category-orbit-mark" key={index}>
+                    <Icon name="Package" size={24} />
+                  </span>
+                ))}
+              </div>
+            </VisualFrame>
+          </div>
+          <div className="categories-body">
+            <h2>Browse by category</h2>
+            {categories.loading && <Loading />}
+            {categories.error && <ErrorState error={categories.error} retry={categories.reload} />}
+            {!categories.loading && !categories.error && (
+              <div className="category-list">
+                {categoryRows.map((category) => (
+                  <Link
+                    key={category.id}
+                    to={`/medicines?categoryId=${category.id}`}
+                    className="category-row"
+                  >
+                    <span className="category-mark" aria-hidden="true">
+                      <Icon name="Package" size={20} />
+                    </span>
+                    <span className="category-text">
+                      <span className="category-name">{category.name}</span>
+                      <span className="category-count">
+                        {category.medicine_count
+                          ? `${category.medicine_count} medicine${category.medicine_count === 1 ? '' : 's'}`
+                          : 'Browse'}
+                      </span>
+                    </span>
+                    <Icon name="ArrowRight" size={18} className="category-arrow" />
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
       </SectionBand>
 
-      <SectionBand tone="plain" className="home-section" id="categories">
-        <h2>Browse by category</h2>
-        {categories.loading && <Loading />}
-        {categories.error && <ErrorState error={categories.error} retry={categories.reload} />}
-        {!categories.loading && !categories.error && (
-          <div className="category-tiles">
-            {categoryRows.map((category) => (
-              <Link key={category.id} to={`/medicines?categoryId=${category.id}`} className="category-tile">
-                <span className="category-mark" aria-hidden="true">
-                  <Icon name="Package" size={20} />
+      <SectionBand tone="peach" className="home-section home-how" id="how-it-works">
+        <h2 className="how-title">How it works</h2>
+        <div className="how-wrap">
+          <svg
+            className="how-connectors"
+            viewBox="0 0 1000 936"
+            preserveAspectRatio="none"
+            aria-hidden="true"
+            focusable="false"
+          >
+            <path d="M 18 120 C 250 120 300 448 490 448" />
+            <path d="M 490 448 C 300 448 250 776 18 776" />
+          </svg>
+          <ol className="how-steps">
+            <li className="how-step">
+              <div className="how-step-copy">
+                <span className="how-step-number" aria-hidden="true">
+                  1
                 </span>
-                <span className="category-name">{category.name}</span>
-                <span className="category-count">
-                  {category.medicine_count
-                    ? `${category.medicine_count} medicine${category.medicine_count === 1 ? '' : 's'}`
-                    : 'Browse'}
+                <h3>Find your medicine.</h3>
+              </div>
+              <div className="how-step-visual" aria-hidden="true">
+                <VisualFrame tone="peach" shape="panel">
+                  <div className="how-panel">
+                    <MiniCard className="how-mini">
+                      <Icon name="Search" size={18} />
+                      <span className="mini-label">Search medicines</span>
+                    </MiniCard>
+                    <MiniCard className="how-mini">
+                      <span className="how-thumb">P</span>
+                      <span>
+                        <strong>Panadol 500 mg</strong>
+                        <span className="mini-label">GHS 5.00</span>
+                      </span>
+                      <span className="how-chip">In stock</span>
+                    </MiniCard>
+                    <MiniCard className="how-mini">
+                      <span className="how-thumb">B</span>
+                      <span>
+                        <strong>Brufen 400 mg</strong>
+                        <span className="mini-label">GHS 7.00</span>
+                      </span>
+                      <span className="how-chip">In stock</span>
+                    </MiniCard>
+                  </div>
+                </VisualFrame>
+              </div>
+            </li>
+            <li className="how-step">
+              <div className="how-step-copy">
+                <span className="how-step-number" aria-hidden="true">
+                  2
                 </span>
-              </Link>
-            ))}
-          </div>
-        )}
+                <h3>Place your order, no account needed.</h3>
+              </div>
+              <div className="how-step-visual" aria-hidden="true">
+                <VisualFrame tone="blue" shape="panel">
+                  <div className="how-panel">
+                    <MiniCard className="how-mini">
+                      <span className="how-thumb">P</span>
+                      <span>
+                        <strong>Panadol 500 mg</strong>
+                        <span className="mini-label">Doryumu Community Pharmacy</span>
+                      </span>
+                      <span className="how-price">GHS 5.00</span>
+                    </MiniCard>
+                    <MiniCard className="how-mini">
+                      <Icon name="Cart" size={18} />
+                      <span>
+                        <strong>1 item</strong>
+                        <span className="mini-label">GHS 5.00</span>
+                      </span>
+                    </MiniCard>
+                    <span className="how-action">Place order</span>
+                  </div>
+                </VisualFrame>
+              </div>
+            </li>
+            <li className="how-step">
+              <div className="how-step-copy">
+                <span className="how-step-number" aria-hidden="true">
+                  3
+                </span>
+                <h3>Pick it up or get it delivered.</h3>
+              </div>
+              <div className="how-step-visual" aria-hidden="true">
+                <VisualFrame tone="rose" shape="panel">
+                  <div className="how-panel">
+                    <MiniCard className="how-mini">
+                      <Icon name="MapPin" size={18} />
+                      <span>
+                        <strong>Pickup</strong>
+                        <span className="mini-label">Doryumu Community Pharmacy</span>
+                      </span>
+                    </MiniCard>
+                    <MiniCard className="how-mini">
+                      <Icon name="Truck" size={18} />
+                      <span>
+                        <strong>Delivery</strong>
+                        <span className="mini-label">Choose an address</span>
+                      </span>
+                      <span className="how-chip">Ready</span>
+                    </MiniCard>
+                  </div>
+                </VisualFrame>
+              </div>
+            </li>
+          </ol>
+        </div>
       </SectionBand>
 
       <SectionBand tone="white" className="home-section" id="pharmacies">
