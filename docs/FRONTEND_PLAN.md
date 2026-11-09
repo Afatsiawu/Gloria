@@ -84,10 +84,10 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 - [x] Category rows with tinted icon circles and counts.
 - [x] Peach "How it works" band, zigzag steps, desktop dotted connectors, stacked visual-first on phone/tablet.
 
-### Step 5 — Home sections 4–6, footer, image slots
-- [ ] Pharmacies grid 3/2/1, prescription section, rounded tracking band.
-- [ ] `client/src/config/landingImages.js` (all null), `VisualFrame` image support, README sizing/licensing notes.
-- [ ] Footer complete; phone columns 1–2; no social icons.
+### Step 5 — Home sections 4–6, footer, image slots (complete)
+- [x] Pharmacies grid 3/2/1, prescription section, rounded tracking band.
+- [x] `client/src/config/landingImages.js` (all null), `VisualFrame` image support, README sizing/licensing notes.
+- [x] Footer complete; phone columns 1–2; no social icons.
 
 ### Step 6 — Customer pages
 - [ ] Medicines, medicine detail, cart, checkout, confirmation, tracking and account pages in white/purple with 16px cards and neutral-100 borders.
@@ -125,6 +125,8 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 | Home hero | search pill 56px (44px input/button), purple focus ring, two columns from 1024px, mini cards inside the viewport at 320–1920px |
 | Home categories | six 64px+ rows; orbit visible only from 1024px in a 440px column |
 | How it works | peach-50 band; 260px panels on phone, 300px from 1024px; zigzag and dashed connectors only from 1024px |
+| Home pharmacies | 10 white cards in 1/2/3 columns at 320/640/1024px; community overline on each card |
+| Prescription and tracking | peach circle 220/260px; tracking band primary-50, 24px radius, one column then form + phone at 1024px |
 
 ## 7. Risks
 

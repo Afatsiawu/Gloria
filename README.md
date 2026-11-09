@@ -159,6 +159,14 @@ Key environment variables (see `.env.example`):
 └── docs/
 ```
 
+### Optional landing images
+
+The Home page works without photos: the hero, category and prescription visuals are built from the product UI. If you add photography later, put the files in `client/public/images/landing/` and point the matching slot in `client/src/config/landingImages.js` at the file. All slots are `null` by default.
+
+- **Sizes**: circle slots (`hero`, `categories`, `prescription`, `tracking`) are 1:1, 800×800px. Panel slots (`howItWorksFind`, `howItWorksOrder`, `howItWorksReceive`) are 4:3, 800×600px. The `pharmacies` slot is 16:9, 1200×675px.
+- **Format**: WebP, 60 KB target, no text baked into the image, meaningful text alternative where the image carries information.
+- **Licensing**: only use images the project owns or is licensed to use. Do not hotlink stock photos or copy imagery from the reference site.
+
 ## Assumptions and scope
 
 See [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md). In summary: JavaScript (not TypeScript) throughout; Node 24 in this environment (spec asked for 20); money stored as GHS decimals rounded to 2 places; prescriptions served only via authenticated endpoint from outside web root; third-party providers mocked behind adapters with real-provider TODOs.

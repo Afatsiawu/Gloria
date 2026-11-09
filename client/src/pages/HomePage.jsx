@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useFetch, usePageTitle } from '../hooks/useApi.js';
 import { ErrorState, Icon, Loading, SectionBand } from '../components/UI.jsx';
 import { MiniCard, PhoneMock, VisualFrame } from '../components/LandingVisuals.jsx';
+import landingImages from '../config/landingImages.js';
 
 const COMMUNITIES = ['Doryumu', 'Kordibe'];
 
@@ -80,7 +81,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="home-hero-visual" aria-hidden="true">
-            <VisualFrame tone="peach" shape="circle" className="hero-frame">
+            <VisualFrame tone="peach" shape="circle" className="hero-frame" image={landingImages.hero}>
               <PhoneMock variant="medicines" className="hero-phone" />
             </VisualFrame>
             <MiniCard className="hero-mini hero-mini-stock">
@@ -104,7 +105,12 @@ export default function HomePage() {
       <SectionBand tone="white" className="home-section home-categories" id="categories">
         <div className="categories-grid">
           <div className="categories-visual" aria-hidden="true">
-            <VisualFrame tone="blue" shape="circle" className="categories-frame">
+            <VisualFrame
+              tone="blue"
+              shape="circle"
+              className="categories-frame"
+              image={landingImages.categories}
+            >
               <div className="category-orbit">
                 {[0, 1, 2, 3].map((index) => (
                   <span className="category-orbit-mark" key={index}>
@@ -257,74 +263,98 @@ export default function HomePage() {
         </div>
       </SectionBand>
 
-      <SectionBand tone="white" className="home-section" id="pharmacies">
+      <SectionBand tone="white" className="home-section home-pharmacies" id="pharmacies">
         <h2>Our pharmacies</h2>
         {pharmacies.loading && <Loading />}
         {pharmacies.error && <ErrorState error={pharmacies.error} retry={pharmacies.reload} />}
         {!pharmacies.loading && !pharmacies.error && (
-          <div className="pharmacy-groups">
-            {COMMUNITIES.map((community) => {
-              const rows = pharmacyRows.filter((pharmacy) => pharmacy.community === community);
-              return (
-                <div key={community} className="pharmacy-group">
-                  <h3>{community}</h3>
-                  {rows.length === 0 && <p className="muted">No pharmacies listed.</p>}
-                  <div className="pharmacy-cards">
-                    {rows.map((pharmacy) => (
-                      <article key={pharmacy.id} className="pharmacy-card">
-                        <h4 className="pharmacy-name">{pharmacy.name}</h4>
-                        <a href={`tel:${pharmacy.phone}`} className="pharmacy-phone">
-                          <Icon name="Phone" size={16} />
-                          {pharmacy.phone}
-                        </a>
-                        <Link to={`/medicines?community=${community}`} className="pharmacy-link">
-                          See medicines
-                        </Link>
-                      </article>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+          <div className="pharmacy-grid">
+            {pharmacyRows.map((pharmacy) => (
+              <article key={pharmacy.id} className="pharmacy-card">
+                <span className="pharmacy-community">{pharmacy.community}</span>
+                <h3 className="pharmacy-name">{pharmacy.name}</h3>
+                <a href={`tel:${pharmacy.phone}`} className="pharmacy-phone">
+                  <Icon name="Phone" size={16} />
+                  {pharmacy.phone}
+                </a>
+                <Link
+                  to={`/medicines?community=${pharmacy.community}`}
+                  className="pharmacy-link"
+                >
+                  See medicines
+                  <Icon name="ArrowRight" size={16} />
+                </Link>
+              </article>
+            ))}
           </div>
         )}
       </SectionBand>
 
-      <SectionBand tone="plain" className="home-section">
-        <div className="track-card">
-          <h2>Track your order</h2>
-          <form className="track-form" onSubmit={track}>
-            <div className="field">
-              <label htmlFor="track-reference">Order reference</label>
-              <input
-                id="track-reference"
-                value={reference}
-                onChange={(event) => setReference(event.target.value)}
-                placeholder="PH-123456"
-                autoComplete="off"
-                required
-              />
-            </div>
-            <div className="field">
-              <label htmlFor="track-phone">Phone number</label>
-              <input
-                id="track-phone"
-                type="tel"
-                inputMode="tel"
-                value={phone}
-                onChange={(event) => setPhone(event.target.value)}
-                autoComplete="tel"
-                required
-              />
-            </div>
-            <button type="submit" className="btn btn-primary">
-              Track order
-            </button>
-          </form>
+      <SectionBand tone="plain" className="home-section home-prescription" id="prescriptions">
+        <div className="prescription-panel">
+          <div className="prescription-visual" aria-hidden="true">
+            <VisualFrame
+              tone="peach"
+              shape="circle"
+              className="prescription-frame"
+              image={landingImages.prescription}
+            >
+              <span className="prescription-mark">
+                <Icon name="Package" size={44} />
+              </span>
+            </VisualFrame>
+          </div>
+          <div className="prescription-copy">
+            <h2>Prescription medicines</h2>
+            <p>
+              Prescription medicines need a prescription. A pharmacist checks it before your order is
+              released.
+            </p>
+            <Link to="/medicines" className="btn btn-secondary">
+              Browse medicines
+            </Link>
+          </div>
         </div>
-        <p className="home-note" id="prescriptions">
-          Prescription medicines need a prescription. A pharmacist checks it before your order is released.
-        </p>
+      </SectionBand>
+
+      <SectionBand tone="white" className="home-section home-tracking">
+        <div className="track-panel">
+          <div className="track-copy">
+            <h2>Track your order</h2>
+            <form className="track-form" onSubmit={track}>
+              <div className="field">
+                <label htmlFor="track-reference">Order reference</label>
+                <input
+                  id="track-reference"
+                  value={reference}
+                  onChange={(event) => setReference(event.target.value)}
+                  placeholder="PH-123456"
+                  autoComplete="off"
+                  required
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="track-phone">Phone number</label>
+                <input
+                  id="track-phone"
+                  type="tel"
+                  inputMode="tel"
+                  value={phone}
+                  onChange={(event) => setPhone(event.target.value)}
+                  autoComplete="tel"
+                  required
+                />
+              </div>
+              <button type="submit" className="btn btn-primary">
+                Track order
+              </button>
+            </form>
+          </div>
+          <div className="track-visual" aria-hidden="true">
+            <span className="track-halo" />
+            <PhoneMock variant="tracking" className="track-phone" />
+          </div>
+        </div>
       </SectionBand>
     </div>
   );

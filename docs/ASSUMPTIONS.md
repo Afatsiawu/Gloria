@@ -86,6 +86,10 @@ This capstone project was built autonomously from a product specification; where
 18. **Bottom navigation.** It is 64px tall plus `env(safe-area-inset-bottom)`, white with a neutral-100 top border, purple-700 active label and a 3px purple indicator above the active item. The footer reserves extra bottom padding so the copyright never sits under it.
 19. **Home hero and browse sections.** The hero search is a 56px white pill (44px input and button plus 5px inset and 1px border) with a purple focus ring; both community cards carry a purple arrow circle. The decorative category orbit is hidden below 1024px so the six category rows get the full width; from 1024px it sits in a 440px left column. Category icon circles cycle purple-50, peach-100, sky-100 and rose-100 tints in list order.
 20. **How it works composition.** The band uses peach-50. On phone and tablet the three steps stack visual-first; from 1024px they alternate copy/visual with 24px panels (260px tall on phone, 300px from 1024px) and a dashed purple connector drawn behind them. The connectors are decorative and hidden below 1024px, where the stacked order keeps the sequence clear without them.
+21. **Pharmacies are one grid.** The ten seeded pharmacies render in a single card grid (1 column below 640px, 2 from 640px, 3 from 1024px) instead of two community columns. Each card keeps the community as an overline, the name, the phone link and "See medicines"; no pharmacy or count is hidden.
+22. **Prescription section copy.** The section gets the heading "Prescription medicines" and the existing sentence verbatim, plus an outlined "Browse medicines" link to `/medicines`; the peach circle holds a package mark rather than a stock photo. The `#prescriptions` anchor moves to this section so footer and header links still land correctly.
+23. **Tracking band.** A primary-50 panel with 24px radius holds the existing form and a decorative tracking phone mock on a white halo. The form stacks below 1024px, then sits left of the phone. The phone shows only status labels already used by the product (Verified, Ready, Completed), not a live or invented order.
+24. **Optional images are wired but off.** `client/src/config/landingImages.js` exposes eight slots (hero, categories, three how-it-works panels, pharmacies, prescription, tracking), all `null`. The hero, category and prescription frames read their slot, so setting one swaps the visual without touching JSX. The README documents sizes, WebP/60 KB guidance and the licensing rule.
 
 ### Verification of Step 1
 
@@ -119,6 +123,16 @@ This capstone project was built autonomously from a product specification; where
 - **Hero layout**: one column below 1024px with the phone visual capped at 440px and centred; two columns from 1024px (`404px 500px` at 1024, `580px 500px` at 1280+). Display heading resolves 32px at 320 and 48px from 1024px.
 - **Categories**: six rows after the API resolves; rows are 64px where the name fits and grow when it wraps at 320px; the orbit is `display: none` below 1024px and visible in a 440px column above.
 - **How it works**: band background `rgb(255,249,244)`; panel height 260px on phone/tablet and 300px from 1024px with 24px radius; copy/visual order swaps only on even rows from 1024px; connectors are `display: none` below 1024px.
+- **Build and tests**: production build succeeds and the client suite passes 21/21.
+
+### Verification of Step 5
+
+- **Overflow**: 0px at 320, 360, 390, 414, 768, 1024, 1280, 1440 and 1920px with all ten pharmacy cards rendered.
+- **Pharmacies**: the grid resolves to one column below 640px, two at 768px and three from 1024px; every card shows the community overline, name, 44px phone link and 44px "See medicines" link.
+- **Prescription**: peach circle 220px on phones and 260px from 768px, 112px white package mark, outlined button 44px tall; heading and sentence match the agreed copy; `#prescriptions` resolves to the section.
+- **Tracking**: panel background `rgb(244,240,250)` with 24px radius; one column through 768px and two from 1024px; phone mock 180px on phones and 210px on desktop; inputs 48px and the button 44px.
+- **Footer**: two columns at phone widths and three from 768px; unchanged from Step 3.
+- **Image slots**: all eight are `null`; the rendered page contains no `.visual-frame-image` elements, and the Home page is complete without photography.
 - **Build and tests**: production build succeeds and the client suite passes 21/21.
 
 ## Deviations from the original specification
