@@ -74,10 +74,10 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 - [x] Status map updated: placed = info, verified = primary tint, out-for-delivery = blue; badge/chip info and primary variants added.
 - [x] All targets ≥44px, inputs 48px; overflow 0 at 320–1920px.
 
-### Step 3 — Layout shells
-- [ ] Customer header (centred nav, outlined Login pill, cart dot, own-row search on phone), indigo footer with three columns, phone bottom nav, staff layout.
-- [ ] Restyle the full-page mobile menu only; behaviour unchanged. Close button 44px.
-- [ ] Safe areas and `100dvh`; no overlap between header, bottom nav and sticky bars.
+### Step 3 — Layout shells (complete)
+- [x] Customer header (centred nav, outlined Login pill, cart dot, own-row search on phone), indigo footer with three columns, phone bottom nav, staff layout.
+- [x] Restyle the full-page mobile menu only; behaviour unchanged. Close button 44px.
+- [x] Safe areas and `100dvh`; no overlap between header, bottom nav and sticky bars.
 
 ### Step 4 — Home sections 1–3
 - [ ] Hero with phone mock, mini cards and community cards.
@@ -118,6 +118,10 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 | Overflow at 320/360/390/414/768/1024/1280/1440/1920 | 0px at every width |
 | Body background / heading colour | white / `rgb(28,20,72)` (indigo-900) |
 | Old palette in `styles.css` | no old hex values remain; only the purple remap |
+| Header nav centre (≥1024px) | 512/512, 640/640, 720/720 and 960/960 at 1024/1280/1440/1920 |
+| Footer | indigo-900 background, three columns from 768px, two at phone widths |
+| Mobile menu (390px) | dialog, scroll lock on/off, 44×44 close, focus inside, history sentinel, closes on route and Escape |
+| Staff shell | sidebar 264px from 1024px, active primary-50 with 3px purple bar; topbar 64px |
 
 ## 7. Risks
 

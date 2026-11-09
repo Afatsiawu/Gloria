@@ -79,6 +79,11 @@ This capstone project was built autonomously from a product specification; where
 11. **Header search placement.** On phones the customer header keeps logo, cart and menu on one row and the medicine search on its own row. On desktop the header search is hidden on Home and Medicines because those pages already own a prominent search field; other customer pages keep it. This preserves the existing search entry point without duplicating it.
 12. **Charts use the new palette in order**: purple-600 main series, sky-500 secondary, rose-500 tertiary, peach-300 fourth; neutral-100 grid lines. Legends always label the series, so colour is not the only cue.
 13. **Favicon and browser chrome.** The favicon becomes a purple capsule/cross mark and `theme-color` is `#6D4FA3`, matching the primary action colour.
+14. **Header uses a three-column grid on desktop.** At 1024px and above the header is `1fr auto 1fr`, so the navigation is centred in the viewport regardless of logo or action widths; below 1024px the logo and actions sit on one row. "How it works" links to `/#how-it-works`. The Home page now carries `#how-it-works`, `#categories` and `#prescriptions` anchors; the hash-scroll effect retries for up to two seconds so links from other pages still land correctly after the lazy Home chunk mounts.
+15. **Footer content.** The indigo-900 footer keeps the existing pharmacist disclaimer and phone number, and adds Shop / Help / Account columns. Account shows "Your account" when signed in and Login/Register otherwise. The Privacy notice button opens the existing modal. The copyright year is computed at render. No social icons, statistics or reviews are added.
+16. **Cart indicator.** The cart shows a small decorative purple dot when empty and a purple count badge when it holds items; both are anchored to the icon and the link has an accessible item-count label.
+17. **Staff shell dimensions.** The sidebar is 264px on white with a neutral-100 right border, overline group labels, a primary-50 active row and a 3px primary-600 left bar; Sign out is pinned to the bottom. The topbar is 64px and the content container is 1440px with 16/24/32px gutters. Below 1024px the sidebar is replaced by the same full-page menu used by the customer layout.
+18. **Bottom navigation.** It is 64px tall plus `env(safe-area-inset-bottom)`, white with a neutral-100 top border, purple-700 active label and a 3px purple indicator above the active item. The footer reserves extra bottom padding so the copyright never sits under it.
 
 ### Verification of Step 1
 
@@ -94,6 +99,16 @@ This capstone project was built autonomously from a product specification; where
 - The status map now follows the brief: `placed` = info, `awaiting_prescription` = warning, `verified` = primary, `ready`/`completed` = success, `out_for_delivery` = info (blue), `cancelled` = danger. The two assertions in `format.test.js` that encoded the previous neutral-placed mapping were updated to the new documented map; the rest of the suite is unchanged and all 21 tests pass.
 - `PhoneMock` uses seeded names only (Panadol 500 mg, Brufen 400 mg) with their seeded prices; the tracking screen shows status labels and no invented reference, rating, statistic or date.
 - The minified stylesheet is about 59 KB at this stage. It is above the 40 KB target because the old screen CSS is still present while screens are migrated; Step 9 removes unused selectors after the last page is rebuilt.
+
+### Verification of Step 3
+
+- **Header and footer at all widths**: `scrollWidth` equals the viewport at 320, 360, 390, 414, 768, 1024, 1280, 1440 and 1920px (overflow 0). The nav centre matches the viewport centre exactly at 1024, 1280, 1440 and 1920px. The outlined account pill is 44px tall and the menu button is 44×44 below 1024px.
+- **Header search row**: on a page without its own search (checked on `/track` at 390px) the row displays and the input is 48px tall. It stays hidden on Home and Medicines per decision 11.
+- **Footer**: computed background is `rgb(28,20,72)` (indigo-900); three columns render from 768px (`grid-template-columns` resolves to three tracks) and two at phone widths, with Account wrapping below. Footer links and buttons are at least 44px tall.
+- **Bottom navigation**: 64px tall at 320–414px, hidden from 768px up; active label is purple-700 with the purple indicator.
+- **Mobile menu at 390px**: opens as `role="dialog" aria-modal="true"`, focus moves inside, body overflow becomes `hidden`, the history sentinel is set, the 44×44 close button closes it and restores overflow to `visible`. The staff menu opens from the staff topbar with the same lock, 52px links and primary-50 active row.
+- **Staff layout**: at 1280 and 1024px the sidebar is visible at 264px with a white background, neutral-100 right border, primary-50 active row and 3px purple left bar; at 768 and 390px the sidebar is hidden and the topbar shows the logo, user name and 44px menu button. Content uses the 1440px container with 32px gutters at 1024px and 16px at 390px.
+- **Build and tests**: production build succeeds and the client suite passes 21/21 after the layout changes.
 
 ## Deviations from the original specification
 
