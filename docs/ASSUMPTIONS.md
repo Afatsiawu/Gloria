@@ -158,6 +158,7 @@ This capstone project was built autonomously from a product specification; where
 4. **Forced password change**: `users.must_change_password` is added by migration `004` with a default of 0. Admins may set it when creating or updating staff, and `/auth/me/password` clears it once the password is changed.
 5. **Suspended accounts**: login returns 401 with "This account is suspended. Contact the pharmacy."; wrong identifiers and passwords keep the single generic message.
 6. **Pharmacy scoping**: pharmacists are scoped to `req.user.pharmacy_id` in orders, prescriptions, inventory, delivery, dashboard, analytics and reports; an admin may pass a pharmacy id. Cross-pharmacy access returns 403.
+7. **Client route mapping**: the app's existing `/dashboard` and `/staff/*` pages stay unchanged. `client/src/config/roleRoutes.js` maps the canonical `/pharmacist/*`, `/admin/dashboard` and `/rider/deliveries` URLs onto them, so role homes are `/account` (customer), `/dashboard` (pharmacist and admin) and `/rider` (rider). `next` values are accepted only when they are local, exist in the router and are allowed for the role.
 
 ## Deviations from the original specification
 
