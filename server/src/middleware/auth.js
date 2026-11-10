@@ -29,8 +29,8 @@ export function findUserById(id) {
   return getDb()
     .prepare(
       `SELECT u.id, u.role, u.full_name, u.phone, u.email, u.pharmacy_id, u.community,
-              u.delivery_address, u.digital_address_code, u.is_active, u.created_at,
-              p.name AS pharmacy_name
+              u.delivery_address, u.digital_address_code, u.is_active, u.must_change_password,
+              u.created_at, p.name AS pharmacy_name
          FROM users u LEFT JOIN pharmacies p ON p.id = u.pharmacy_id
         WHERE u.id = ?`
     )

@@ -108,7 +108,101 @@ describe('authentication', () => {
     const customer = await makeClient(app);
     const response = await customer.login('+233240000101');
     expect(response.status).toBe(401);
-    expect(response.body.error.message).toMatch(/suspended/i);
+    expect(response.body.error.message).toBe('This account is suspended. Contact the pharmacy.');
+  });
+});
+
+describe('user shape for routing', () => {
+  const ROUTING_FIELDS = ['id', 'fullName', 'role', 'pharmacyId', 'pharmacyName', 'mustChangePassword'];
+
+  it('returns the same routing shape from login, register and me', async () => {
+    const client = await makeClient(app);
+    const login = await client.login('+233240000103');
+    expect(login.status).toBe(200);
+    for (const field of ROUTING_FIELDS) expect(login.body.user).toHaveProperty(field);
+    expect(login.body.user).toMatchObject({
+      fullName: 'Yaw Pharmacist',
+      role: 'pharmacist',
+      pharmacyId: ids.pharmacyA,
+      pharmacyName: 'Doryumu Community Pharmacy',
+      mustChangePassword: false,
+    });
+    expect(login.body.user.password_hash).toBeUndefined();
+
+    const me = await client.get('/api/auth/me');
+    expect(me.status).toBe(200);
+    for (const field of ROUTING_FIELDS) expect(me.body.user).toHaveProperty(field);
+    expect(me.body.user).toMatchObject({ id: ids.pharmacistA, role: 'pharmacist', mustChangePassword: false });
+
+    const anonymous = await makeClient(app);
+    const registered = await anonymous.post('/api/auth/register', {
+      fullName: 'Routing Shape',
+      phone: '0200000299',
+      password: 'NewPass123',
+      community: 'Doryumu',
+      consent: true,
+    });
+    expect(registered.status).toBe(201);
+    expect(registered.body.user).toMatchObject({
+      role: 'customer',
+      pharmacyId: null,
+      pharmacyName: null,
+      mustChangePassword: false,
+    });
+    expect(registered.body.user.password_hash).toBeUndefined();
+  });
+
+  it('ignores a role sent to the public registration endpoint', async () => {
+    const client = await makeClient(app);
+    const response = await client.post('/api/auth/register', {
+      fullName: 'Sneaky Admin',
+      phone: '0200000298',
+      password: 'NewPass123',
+      community: 'Kordibe',
+      consent: true,
+      role: 'admin',
+    });
+    expect(response.status).toBe(201);
+    expect(response.body.user.role).toBe('customer');
+    expect(getDb().prepare('SELECT role FROM users WHERE id = ?').get(response.body.user.id).role).toBe('customer');
+  });
+
+  it('lets an admin force a password change and clears the flag after it', async () => {
+    const admin = await makeClient(app);
+    await admin.login('+233240000100');
+    const created = await admin.post('/api/users', {
+      fullName: 'New Pharmacist',
+      phone: '0200000297',
+      role: 'pharmacist',
+      pharmacyId: ids.pharmacyA,
+      community: 'Doryumu',
+      password: 'TempPass123',
+      mustChangePassword: true,
+    });
+    expect(created.status).toBe(201);
+    expect(created.body.user.must_change_password).toBe(1);
+
+    const staff = await makeClient(app);
+    const login = await staff.login('0200000297', 'TempPass123');
+    expect(login.status).toBe(200);
+    expect(login.body.user.mustChangePassword).toBe(true);
+    expect((await staff.get('/api/auth/me')).body.user.mustChangePassword).toBe(true);
+
+    const changed = await staff.patch('/api/auth/me/password', {
+      currentPassword: 'TempPass123',
+      newPassword: 'ChosenPass123',
+    });
+    expect(changed.status).toBe(200);
+    expect((await staff.get('/api/auth/me')).body.user.mustChangePassword).toBe(false);
+  });
+
+  it('clears the auth cookie on logout', async () => {
+    const client = await makeClient(app);
+    await client.login('+233240000101');
+    const response = await client.post('/api/auth/logout');
+    expect(response.status).toBe(200);
+    expect(response.headers['set-cookie'].join(';')).toMatch(/pharm_token=;/);
+    expect((await client.get('/api/auth/me')).status).toBe(401);
   });
 });
 

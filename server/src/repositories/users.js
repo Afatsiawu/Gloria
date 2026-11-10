@@ -1,7 +1,7 @@
 import { getDb } from '../db/index.js';
 
 const SAFE_FIELDS = `u.id, u.role, u.full_name, u.phone, u.email, u.pharmacy_id, u.community,
-  u.delivery_address, u.digital_address_code, u.is_active, u.created_at,
+  u.delivery_address, u.digital_address_code, u.is_active, u.must_change_password, u.created_at,
   p.name AS pharmacy_name`;
 const JOINS = 'FROM users u LEFT JOIN pharmacies p ON p.id = u.pharmacy_id';
 
@@ -27,11 +27,11 @@ export function createUser(data) {
   const info = getDb()
     .prepare(
       `INSERT INTO users (role, full_name, phone, email, password_hash, pharmacy_id, community,
-                          delivery_address, digital_address_code, consent_at)
+                          delivery_address, digital_address_code, consent_at, must_change_password)
        VALUES (@role, @fullName, @phone, @email, @passwordHash, @pharmacyId, @community,
-               @deliveryAddress, @digitalAddressCode, @consentAt)`
+               @deliveryAddress, @digitalAddressCode, @consentAt, @mustChangePassword)`
     )
-    .run(data);
+    .run({ mustChangePassword: 0, ...data });
   return findById(info.lastInsertRowid);
 }
 
@@ -53,15 +53,23 @@ export function updatePassword(id, passwordHash) {
     .run(passwordHash, id);
 }
 
+export function clearMustChangePassword(id) {
+  getDb()
+    .prepare("UPDATE users SET must_change_password = 0, updated_at = datetime('now') WHERE id = ?")
+    .run(id);
+}
+
 export function updateUserAdmin(id, data) {
   getDb()
     .prepare(
       `UPDATE users SET full_name = @fullName, phone = @phone, email = @email, role = @role,
         pharmacy_id = @pharmacyId, community = @community, delivery_address = @deliveryAddress,
-        digital_address_code = @digitalAddressCode, is_active = @isActive, updated_at = datetime('now')
+        digital_address_code = @digitalAddressCode, is_active = @isActive,
+        must_change_password = COALESCE(@mustChangePassword, must_change_password),
+        updated_at = datetime('now')
        WHERE id = @id`
     )
-    .run({ id, ...data });
+    .run({ id, mustChangePassword: null, ...data });
   return findById(id);
 }
 

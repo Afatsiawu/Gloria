@@ -7,10 +7,19 @@ import { sixDigitCode } from '../utils/reference.js';
 import { sendSms, sendEmail, listNotifications } from './notificationService.js';
 import { recordAudit } from '../repositories/audit.js';
 
-const publicUser = (user) => {
+export const publicUser = (user) => {
   if (!user) return null;
   const { password_hash: _hash, ...safe } = user;
-  return safe;
+  const { must_change_password: mustChange, ...rest } = safe;
+  // camelCase fields are the contract the client relies on for routing.
+  // The remaining snake_case fields feed existing profile screens.
+  return {
+    ...rest,
+    fullName: user.full_name,
+    pharmacyId: user.pharmacy_id,
+    pharmacyName: user.pharmacy_name,
+    mustChangePassword: Boolean(mustChange),
+  };
 };
 
 export async function register(input, ip) {
@@ -58,7 +67,7 @@ export async function login(input, ip) {
   if (!user || !(await verifyPassword(input.password, user.password_hash))) {
     throw unauthorized('Phone/email or password is incorrect.');
   }
-  if (!user.is_active) throw unauthorized('This account has been suspended. Contact the administrator.');
+  if (!user.is_active) throw unauthorized('This account is suspended. Contact the pharmacy.');
   recordAudit({
     userId: user.id,
     action: 'login',
@@ -185,6 +194,7 @@ export async function changePassword(userId, currentPassword, newPassword) {
   const problems = passwordProblems(newPassword);
   if (problems.length) throw badRequest(`Password must contain ${problems.join(', ')}.`);
   usersRepo.updatePassword(userId, await hashPassword(newPassword));
+  usersRepo.clearMustChangePassword(userId);
 }
 
 /** Data Protection Act 2012 (Act 843): subject access request. */

@@ -22,7 +22,7 @@ export const logout = (req, res) => {
   res.json({ message: 'Signed out.' });
 };
 
-export const me = (req, res) => res.json({ user: req.user });
+export const me = (req, res) => res.json({ user: authService.publicUser(req.user) });
 
 export const forgotPassword = asyncHandler(async (req, res) => {
   res.json(await authService.forgotPassword(req.body));

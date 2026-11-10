@@ -43,6 +43,7 @@ export async function createUser(input, actorId, ip) {
     deliveryAddress: input.deliveryAddress || null,
     digitalAddressCode: input.digitalAddressCode || null,
     consentAt: new Date().toISOString(),
+    mustChangePassword: input.mustChangePassword ? 1 : 0,
   });
   if (input.role === 'customer') {
     getDb().prepare('INSERT OR IGNORE INTO carts (customer_id) VALUES (?)').run(user.id);
@@ -90,6 +91,8 @@ export async function updateUser(id, input, actorId, ip) {
     deliveryAddress: input.deliveryAddress || null,
     digitalAddressCode: input.digitalAddressCode || null,
     isActive: input.isActive === false ? 0 : 1,
+    mustChangePassword:
+      input.mustChangePassword === undefined ? null : input.mustChangePassword ? 1 : 0,
   });
   if (input.password) usersRepo.updatePassword(id, await hashPassword(input.password));
   recordAudit({

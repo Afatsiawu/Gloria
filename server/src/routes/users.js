@@ -25,6 +25,7 @@ const userBody = z.object({
   digitalAddressCode: z.string().trim().max(20).nullable().optional(),
   password: z.string().min(8).optional(),
   isActive: z.boolean().optional(),
+  mustChangePassword: z.boolean().optional(),
 });
 
 const createBody = userBody.extend({ password: z.string().min(8, 'Password must be at least 8 characters') });

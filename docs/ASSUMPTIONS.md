@@ -150,6 +150,15 @@ This capstone project was built autonomously from a product specification; where
 - **Account**: the card caps at 420px from 768px, fills 288px at 320px; orders and refills rows are 16px-radius neutral-100 cards.
 - **Build and tests**: production build succeeds and the client suite passes 21/21.
 
+## Auth flow decisions
+
+1. **Routing contract**: login, register and `/auth/me` return the same `{ id, fullName, role, pharmacyId, pharmacyName, mustChangePassword }` fields. The legacy snake_case profile fields are kept alongside them so existing profile and checkout screens keep working; no password hash is ever returned.
+2. **Roles from the database**: the JWT identifies the user, but every request reloads the role, pharmacy and active flag from the database. A role change or suspension therefore takes effect on the next request.
+3. **Customer-only registration**: the public register schema has no role field, so zod strips it; the service also hard-codes `role: 'customer'`. Staff accounts are only created by an admin through `/api/users`.
+4. **Forced password change**: `users.must_change_password` is added by migration `004` with a default of 0. Admins may set it when creating or updating staff, and `/auth/me/password` clears it once the password is changed.
+5. **Suspended accounts**: login returns 401 with "This account is suspended. Contact the pharmacy."; wrong identifiers and passwords keep the single generic message.
+6. **Pharmacy scoping**: pharmacists are scoped to `req.user.pharmacy_id` in orders, prescriptions, inventory, delivery, dashboard, analytics and reports; an admin may pass a pharmacy id. Cross-pharmacy access returns 403.
+
 ## Deviations from the original specification
 
 1. **bcryptjs** used instead of native `bcrypt` to avoid native compilation issues in the delivery environment.
