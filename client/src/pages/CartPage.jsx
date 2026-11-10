@@ -1,152 +1,151 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client.js';
-import { useFetch, usePageTitle } from '../hooks/useApi.js';
-import { Alert, EmptyState, ErrorState, PageHeader, Skeleton } from '../components/UI.jsx';
+import { useCart } from '../context/CartContext.jsx';
+import { usePageTitle } from '../hooks/useApi.js';
+import { EmptyState, Loading, Toast } from '../components/UI.jsx';
 import { formatMoney } from '../utils/format.js';
 
 export default function CartPage() {
-  usePageTitle('Your cart');
-  const { data, loading, error, reload } = useFetch('/cart');
+  usePageTitle('Cart');
+  const { cart, loading, setQuantity, removeItem } = useCart();
   const [busy, setBusy] = useState(null);
-  const [notice, setNotice] = useState(null);
-  const [actionError, setActionError] = useState(null);
+  const [actionError, setActionError] = useState('');
+
+  useEffect(() => {
+    if (!actionError) return undefined;
+    const timer = setTimeout(() => setActionError(''), 4000);
+    return () => clearTimeout(timer);
+  }, [actionError]);
 
   const run = async (key, fn) => {
     setBusy(key);
-    setActionError(null);
-    setNotice(null);
+    setActionError('');
     try {
       await fn();
-      reload();
     } catch (err) {
-      setActionError(err);
+      setActionError(err.message || 'Could not update the cart.');
     } finally {
       setBusy(null);
     }
   };
 
-  const setQuantity = (item, quantity) => {
+  const changeQuantity = (item, quantity) => {
     if (quantity < 1 || quantity > 50) return;
-    run(`qty-${item.id}`, () =>
-      api(`/cart/items/${item.id}`, { method: 'PATCH', body: { quantity } })
-    );
+    run(`qty-${item.id}`, () => setQuantity(item, quantity));
   };
 
-  const remove = (item) =>
-    run(`remove-${item.id}`, () => api(`/cart/items/${item.id}`, { method: 'DELETE' }));
+  if (loading) return <Loading />;
 
-  const clear = () => run('clear', () => api('/cart', { method: 'DELETE' }));
-
-  if (loading) return <Skeleton lines={8} />;
-  if (error) return <ErrorState error={error} retry={reload} />;
-
-  const cart = data?.cart;
   const items = cart?.items || [];
 
   if (!items.length) {
     return (
       <EmptyState
         title="Your cart is empty"
-        action={<Link to="/search" className="btn btn-primary">Find medicines</Link>}
+        icon="Cart"
+        action={
+          <Link to="/medicines" className="btn btn-primary">
+            Find medicines
+          </Link>
+        }
       >
-        Browse the catalogue, compare live stock across the 10 pharmacies and add what you need.
+        Search for a medicine to get started.
       </EmptyState>
     );
   }
 
   return (
-    <>
-      <PageHeader
-        eyebrow="Checkout step 1 of 2"
-        title="Your cart"
-        subtitle={`Ordering from ${cart.pharmacy?.name} in ${cart.pharmacy?.community}. A cart can contain medicines from one pharmacy at a time.`}
-        actions={<button type="button" className="btn btn-ghost btn-sm" onClick={clear} disabled={busy === 'clear'}>Clear cart</button>}
-      />
+    <div className="cart-page">
+      <h1 className="page-heading">Cart</h1>
+      <p className="muted page-subline">
+        From {cart.pharmacy?.name}, {cart.pharmacy?.community}
+      </p>
 
-      {actionError && <Alert tone="error">{actionError.message}</Alert>}
-      {notice && <Alert tone="success">{notice}</Alert>}
-
-      <div className="detail-grid">
-        <div className="card">
-          <div className="card-body">
-            {items.map((item) => (
-              <div className="cart-item" key={item.id}>
-                <div className="cart-item-info">
-                  <strong>{item.brand_name}{item.strength ? ` ${item.strength}` : ''}</strong>
-                  <div className="small muted">
-                    {item.generic_name} · {item.dosage_form || 'Medicine'}
-                    {item.requires_prescription ? ' · Prescription required' : ''}
+      <div className="cart-layout">
+        <section className="cart-main card" aria-label="Cart items">
+          <div className="cart-list">
+            {items.map((item) => {
+              const name = `${item.brand_name}${item.strength ? ` ${item.strength}` : ''}`;
+              const limit = Math.min(50, Number(item.available) || 50);
+              return (
+                <div className="cart-item" key={item.id}>
+                  <div className="cart-item-info">
+                    <span className="cart-item-thumb" aria-hidden="true">
+                      {item.brand_name.charAt(0)}
+                    </span>
+                    <div>
+                      <p className="cart-item-name">{name}</p>
+                      <p className="small">{formatMoney(item.price)} each</p>
+                    </div>
                   </div>
-                  <div className="small muted">
-                    {formatMoney(item.price)} each · {item.available} available
+                  <div className="qty" aria-label={`Quantity for ${name}`}>
+                    <button
+                      type="button"
+                      aria-label="Decrease quantity"
+                      disabled={busy === `qty-${item.id}` || item.quantity <= 1}
+                      onClick={() => changeQuantity(item, item.quantity - 1)}
+                    >
+                      −
+                    </button>
+                    <span aria-live="polite">{item.quantity}</span>
+                    <button
+                      type="button"
+                      aria-label="Increase quantity"
+                      disabled={busy === `qty-${item.id}` || item.quantity >= limit}
+                      onClick={() => changeQuantity(item, item.quantity + 1)}
+                    >
+                      +
+                    </button>
                   </div>
-                </div>
-                <div className="qty" aria-label={`Quantity for ${item.brand_name}`}>
+                  <p className="cart-line-total">{formatMoney(item.line_total)}</p>
                   <button
                     type="button"
-                    aria-label="Decrease quantity"
-                    disabled={busy === `qty-${item.id}` || item.quantity <= 1}
-                    onClick={() => setQuantity(item, item.quantity - 1)}
-                  >
-                    −
-                  </button>
-                  <input
-                    value={item.quantity}
-                    readOnly
-                    aria-label={`${item.brand_name} quantity`}
-                  />
-                  <button
-                    type="button"
-                    aria-label="Increase quantity"
-                    disabled={busy === `qty-${item.id}` || item.quantity >= Math.min(50, item.available)}
-                    onClick={() => setQuantity(item, item.quantity + 1)}
-                  >
-                    +
-                  </button>
-                </div>
-                <div className="text-right">
-                  <div className="price">{formatMoney(item.line_total)}</div>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    onClick={() => remove(item)}
+                    className="cart-remove"
+                    onClick={() => run(`remove-${item.id}`, () => removeItem(item))}
                     disabled={busy === `remove-${item.id}`}
                   >
                     Remove
                   </button>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
-        </div>
+        </section>
 
-        <aside>
-          <div className="card sticky-summary">
-            <div className="card-header"><h2>Order summary</h2></div>
-            <div className="card-body">
-              <div className="summary-row">
-                <span>Subtotal ({cart.item_count} item{cart.item_count === 1 ? '' : 's'})</span>
-                <span>{formatMoney(cart.subtotal)}</span>
-              </div>
-              <div className="summary-row">
-                <span>Delivery</span>
-                <span>Calculated at checkout</span>
-              </div>
-              <div className="summary-row total">
-                <span>Estimated total</span>
-                <span>{formatMoney(cart.subtotal)}</span>
-              </div>
-              <Link to="/checkout" className="btn btn-primary btn-block mt-2">Continue to checkout</Link>
-              <Link to="/search" className="btn btn-ghost btn-block mt-1">Add more medicines</Link>
-              <p className="hint mt-2 mb-0">
-                Prescription-only items are reserved now and released only after a pharmacist approves your
-                prescription.
-              </p>
+        <aside className="cart-summary card" aria-label="Order summary">
+          <h2>Order summary</h2>
+          {items.map((item) => (
+            <div className="summary-row summary-item" key={item.id}>
+              <span>
+                {item.quantity} × {item.brand_name}
+                {item.strength ? ` ${item.strength}` : ''}
+              </span>
+              <span>{formatMoney(item.line_total)}</span>
             </div>
+          ))}
+          <div className="summary-row total">
+            <span>
+              Subtotal ({cart.item_count} item{cart.item_count === 1 ? '' : 's'})
+            </span>
+            <span>{formatMoney(cart.subtotal)}</span>
           </div>
+          <p className="small muted">Delivery fees are added at checkout. Prices and stock are checked again when you place the order.</p>
+          <Link to="/checkout" className="btn btn-primary btn-block cart-checkout-inline">
+            Checkout
+          </Link>
         </aside>
       </div>
-    </>
+
+      <div className="cart-sticky">
+        <span className="total">{formatMoney(cart.subtotal)}</span>
+        <Link to="/checkout" className="btn btn-primary">
+          Checkout
+        </Link>
+      </div>
+
+      <Toast tone="error" onClose={() => setActionError('')}>
+        {actionError}
+      </Toast>
+    </div>
   );
 }

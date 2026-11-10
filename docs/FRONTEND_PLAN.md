@@ -90,9 +90,9 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 - [x] Footer complete; phone columns 1–2; no social icons.
 
 ### Step 6 — Customer pages
-- [ ] Medicines, medicine detail, cart, checkout, confirmation, tracking and account pages in white/purple with 16px cards and neutral-100 borders.
-- [ ] Confirmation panel primary-50/peach-50 with success check; placeholders peach-100 with purple first letter; account card 420px on neutral-25.
-- [ ] Guest checkout unchanged and working at 320px.
+- [x] Medicines, medicine detail, cart, checkout, confirmation, tracking and account pages in white/purple with 16px cards and neutral-100 borders.
+- [x] Confirmation panel primary-50/peach-50 with success check; placeholders peach-100 with purple first letter; account card 420px on neutral-25.
+- [x] Guest checkout unchanged and working at 320px.
 
 ### Step 7 — Staff area
 - [ ] White sidebar with right border, primary-50 active link and 3px purple left bar, overline group labels.
@@ -127,6 +127,10 @@ Page rhythm 64–96px, container 1200px, gutters 16/24/32px.
 | How it works | peach-50 band; 260px panels on phone, 300px from 1024px; zigzag and dashed connectors only from 1024px |
 | Home pharmacies | 10 white cards in 1/2/3 columns at 320/640/1024px; community overline on each card |
 | Prescription and tracking | peach circle 220/260px; tracking band primary-50, 24px radius, one column then form + phone at 1024px |
+| Medicines catalogue | 2/3/4 cards at 320/768/1024px; thumbnails 96/112/132px; search + Filter stack below 600px as 48px controls |
+| Cart and checkout | 44×44 quantity buttons; 52px cart thumbnails; 48px inputs; equal option cards (123px at 320px); 44px sticky Place order |
+| Confirmation and account | primary-50 confirmation with success check; account card 420px from 768px; orders/refills 16px neutral-100 cards |
+| Guest checkout | placed end to end at 320px; cart cleared; confirmation rendered with reference and zero overflow |
 
 ## 7. Risks
 

@@ -90,6 +90,10 @@ This capstone project was built autonomously from a product specification; where
 22. **Prescription section copy.** The section gets the heading "Prescription medicines" and the existing sentence verbatim, plus an outlined "Browse medicines" link to `/medicines`; the peach circle holds a package mark rather than a stock photo. The `#prescriptions` anchor moves to this section so footer and header links still land correctly.
 23. **Tracking band.** A primary-50 panel with 24px radius holds the existing form and a decorative tracking phone mock on a white halo. The form stacks below 1024px, then sits left of the phone. The phone shows only status labels already used by the product (Verified, Ready, Completed), not a live or invented order.
 24. **Optional images are wired but off.** `client/src/config/landingImages.js` exposes eight slots (hero, categories, three how-it-works panels, pharmacies, prescription, tracking), all `null`. The hero, category and prescription frames read their slot, so setting one swaps the visual without touching JSX. The README documents sizes, WebP/60 KB guidance and the licensing rule.
+25. **Catalogue density.** Product thumbnails use fixed heights (96px on phones, 112px from 480px, 132px from 768px) instead of a square ratio, so two phone columns keep roughly six rows in view and four desktop columns stay compact; the peach-100 tile with the purple initial still fills the space when a product has no image. The medicines toolbar stacks the search form and a full-width Filter button below 600px, then returns to one row; the search field gains the same search icon as the header.
+26. **Account panel.** Account content sits in a centred 420px maximum-width card with a neutral-25 background and 24px radius; the form takes the full card width. The two disclosure blocks are separated by a neutral-200 rule.
+27. **Confirmation treatment.** The post-checkout panel is primary-50 with a primary-100 border and 24px radius; the check sits on a success tint in success-700 with the "Order received" overline in the same green. The purple reference, copy button and track action are unchanged.
+28. **Customer list rows.** Cart items gain a 52px peach-100 initial tile. Orders and refills render as 16px neutral-100 cards instead of ruled rows. Checkout option cards use equal `minmax(0,1fr)` tracks so long labels wrap inside the card at 320px. The standalone tracking lookup form is a card capped at 560px.
 
 ### Verification of Step 1
 
@@ -133,6 +137,17 @@ This capstone project was built autonomously from a product specification; where
 - **Tracking**: panel background `rgb(244,240,250)` with 24px radius; one column through 768px and two from 1024px; phone mock 180px on phones and 210px on desktop; inputs 48px and the button 44px.
 - **Footer**: two columns at phone widths and three from 768px; unchanged from Step 3.
 - **Image slots**: all eight are `null`; the rendered page contains no `.visual-frame-image` elements, and the Home page is complete without photography.
+- **Build and tests**: production build succeeds and the client suite passes 21/21.
+
+### Verification of Step 6
+
+- **Overflow**: 0px at 320, 360, 390, 414, 768, 1024, 1280, 1440 and 1920px on Medicines, medicine detail, cart, checkout, tracking lookup, account, orders and refills.
+- **Product grid**: two columns at 320–414px, three at 768px, four from 1024px; thumbnails render 96px tall on phones and 132px from 768px; cards are 16px radius with a neutral-100 border.
+- **Medicines toolbar**: below 600px the search input is 48px tall and at least 180px wide next to its 48px Search button, and the Filter button is 48px tall across the full width; from 768px all three sit on one row.
+- **Cart**: quantity buttons measure 44×44px; item thumbnails 52×52px; the sticky checkout button is 44px tall below 768px; no overflow at 320px.
+- **Checkout**: inputs are 48px tall; pickup/delivery and payment option cards are equal width (123px each at 320px) and at least 56px tall; the sticky Place order button is 44px and only displayed below 768px.
+- **Confirmation**: after a real guest checkout at 320px the panel computes primary-50 `rgb(244,240,250)`, 24px radius and primary-100 border; the check mark is success `rgb(27,117,80)` on `rgb(232,246,239)`; the guest cart is cleared and the order reference is shown.
+- **Account**: the card caps at 420px from 768px, fills 288px at 320px; orders and refills rows are 16px-radius neutral-100 cards.
 - **Build and tests**: production build succeeds and the client suite passes 21/21.
 
 ## Deviations from the original specification
