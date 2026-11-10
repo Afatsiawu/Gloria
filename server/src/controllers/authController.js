@@ -32,6 +32,14 @@ export const resetPassword = asyncHandler(async (req, res) => {
   res.json(await authService.resetPassword(req.body, req.ip));
 });
 
+export const requestOrderLink = asyncHandler(async (req, res) => {
+  res.json(await authService.requestOrderLink(req.user.id));
+});
+
+export const verifyOrderLink = asyncHandler(async (req, res) => {
+  res.json(await authService.verifyOrderLink(req.user.id, req.body.code));
+});
+
 export const updateProfile = asyncHandler(async (req, res) => {
   res.json({ user: authService.updateProfile(req.user.id, req.body, req.ip) });
 });

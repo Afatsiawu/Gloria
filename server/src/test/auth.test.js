@@ -320,6 +320,41 @@ describe('password reset', () => {
   });
 });
 
+describe('verified order linking', () => {
+  it('links past guest orders only after a one-time code is verified', async () => {
+    getDb()
+      .prepare(
+        `INSERT INTO orders (reference, customer_id, guest_name, guest_phone, pharmacy_id, channel,
+          fulfilment, status, payment_status, subtotal, total, consent_given_at)
+         VALUES ('PH-LINK-1', NULL, 'Kofi Guest', '+233240000101', ?, 'online', 'pickup', 'placed',
+                 'pending', 5, 5, datetime('now'))`
+      )
+      .run(ids.pharmacyA);
+
+    const client = await makeClient(app);
+    await client.login('+233240000101');
+    expect((await client.get('/api/orders')).body.items).toHaveLength(0);
+
+    const requested = await client.post('/api/auth/me/link-orders/request');
+    expect(requested.status).toBe(200);
+    expect(requested.body.eligible).toBe(true);
+    expect(requested.body.dev_code).toMatch(/^\d{6}$/);
+
+    const wrong = await client.post('/api/auth/me/link-orders/verify', { code: '000000' });
+    expect(wrong.status).toBe(400);
+    expect((await client.get('/api/orders')).body.items).toHaveLength(0);
+
+    const verified = await client.post('/api/auth/me/link-orders/verify', { code: requested.body.dev_code });
+    expect(verified.status).toBe(200);
+    expect(verified.body.linked).toBe(1);
+    const orders = (await client.get('/api/orders')).body.items;
+    expect(orders.map((order) => order.reference)).toContain('PH-LINK-1');
+
+    const again = await client.post('/api/auth/me/link-orders/request');
+    expect(again.body.eligible).toBe(false);
+  });
+});
+
 describe('data protection rights', () => {
   it('exports the customer data and records a deletion request once', async () => {
     const client = await makeClient(app);

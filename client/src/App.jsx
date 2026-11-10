@@ -61,7 +61,10 @@ function OrderRoute() {
   const isAccountOrder = /^\d+$/.test(reference || '');
   if (!isAccountOrder) return <TrackPage />;
   if (loading) return null;
-  if (!user) return <Navigate to="/login" replace state={{ from: `/orders/${reference}` }} />;
+  if (!user) {
+    const next = `/orders/${reference}`;
+    return <Navigate to={`/login?next=${encodeURIComponent(next)}`} replace state={{ from: next }} />;
+  }
   return <OrderTrackingPage />;
 }
 

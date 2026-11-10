@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { api, download } from '../api/client.js';
 import { usePageTitle } from '../hooks/useApi.js';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useToast } from '../context/ToastContext.jsx';
 import { Field } from '../components/UI.jsx';
 import { formatDate } from '../utils/format.js';
 
 export default function ProfilePage() {
   usePageTitle('Account');
   const { user, setUser } = useAuth();
+  const { show } = useToast();
   const [profile, setProfile] = useState({
     fullName: user?.full_name || '',
     email: user?.email || '',
@@ -16,6 +18,7 @@ export default function ProfilePage() {
     digitalAddressCode: user?.digital_address_code || '',
   });
   const [passwords, setPasswords] = useState({ currentPassword: '', newPassword: '' });
+  const [linkState, setLinkState] = useState({ code: '', devCode: '', eligible: null, message: '' });
   const [busy, setBusy] = useState(null);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -78,6 +81,37 @@ export default function ProfilePage() {
         await api('/auth/me/delete-request', { method: 'POST' });
       },
       'Deletion request recorded.'
+    );
+  };
+
+  const requestOrderLink = () =>
+    run(
+      'link-request',
+      async () => {
+        const result = await api('/auth/me/link-orders/request', { method: 'POST' });
+        setLinkState((current) => ({
+          ...current,
+          eligible: result.eligible,
+          devCode: result.dev_code || '',
+          message: result.message,
+        }));
+      },
+      ''
+    );
+
+  const verifyOrderLink = (event) => {
+    event.preventDefault();
+    run(
+      'link-verify',
+      async () => {
+        const result = await api('/auth/me/link-orders/verify', {
+          method: 'POST',
+          body: { code: linkState.code },
+        });
+        setLinkState((current) => ({ ...current, code: '', devCode: '', eligible: false, message: result.message }));
+        show(result.message);
+      },
+      ''
     );
   };
 
@@ -152,6 +186,56 @@ export default function ProfilePage() {
             {busy === 'password' ? 'Please wait…' : 'Change password'}
           </button>
         </form>
+      </details>
+
+      <details className="details-block">
+        <summary>Past guest orders</summary>
+        <p className="small muted">
+          If you ordered as a guest with this phone number, we can link those orders to your account after
+          you verify the code we send you. We will never link them automatically.
+        </p>
+        {linkState.message && <p className="small">{linkState.message}</p>}
+        <div className="detail-actions">
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={requestOrderLink}
+            disabled={busy === 'link-request' || busy === 'link-verify'}
+          >
+            {busy === 'link-request' ? 'Please wait…' : 'Send me a code'}
+          </button>
+        </div>
+        {linkState.devCode && (
+          <p className="small">
+            Development code: <span className="inline-code">{linkState.devCode}</span>
+          </p>
+        )}
+        {linkState.eligible && (
+          <form className="form-narrow profile-form" onSubmit={verifyOrderLink}>
+            <Field label="6-digit code" htmlFor="orderLinkCode" required>
+              <input
+                id="orderLinkCode"
+                value={linkState.code}
+                onChange={(event) =>
+                  setLinkState((current) => ({
+                    ...current,
+                    code: event.target.value.replace(/\D/g, '').slice(0, 6),
+                  }))
+                }
+                inputMode="numeric"
+                pattern="\d{6}"
+                required
+              />
+            </Field>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={busy === 'link-verify' || linkState.code.length !== 6}
+            >
+              {busy === 'link-verify' ? 'Please wait…' : 'Link orders'}
+            </button>
+          </form>
+        )}
       </details>
 
       <details className="details-block">

@@ -73,6 +73,13 @@ router.post('/logout', controller.logout);
 router.post('/forgot-password', authLimiter, validate({ body: forgotSchema }), controller.forgotPassword);
 router.post('/reset-password', authLimiter, validate({ body: resetSchema }), controller.resetPassword);
 router.get('/me', authenticate, controller.me);
+router.post('/me/link-orders/request', authenticate, controller.requestOrderLink);
+router.post(
+  '/me/link-orders/verify',
+  authenticate,
+  validate({ body: z.object({ code: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code') }) }),
+  controller.verifyOrderLink
+);
 router.patch('/me', authenticate, validate({ body: profileSchema }), controller.updateProfile);
 router.patch(
   '/me/password',

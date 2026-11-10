@@ -197,6 +197,79 @@ export async function changePassword(userId, currentPassword, newPassword) {
   usersRepo.clearMustChangePassword(userId);
 }
 
+export async function requestOrderLink(userId) {
+  const user = usersRepo.findById(userId);
+  if (!user) throw unauthorized('Please sign in to continue.');
+  const pending = getDb()
+    .prepare('SELECT COUNT(*) AS c FROM orders WHERE guest_phone = ? AND customer_id IS NULL')
+    .get(user.phone).c;
+  if (!pending) {
+    return {
+      eligible: false,
+      message: 'No past guest orders were found for this phone number.',
+    };
+  }
+
+  const code = sixDigitCode();
+  const codeHash = await hashSecret(code);
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  getDb()
+    .prepare('INSERT INTO order_link_codes (user_id, code_hash, expires_at) VALUES (?, ?, ?)')
+    .run(userId, codeHash, expiresAt);
+  await sendSms(
+    user.phone,
+    'order_link',
+    `PharmaLink code to link your past orders: ${code}. Expires in 10 minutes. Do not share it.`,
+    { userId }
+  );
+
+  const response = {
+    eligible: true,
+    count: pending,
+    message: 'Enter the 6-digit code sent to your phone to link those orders.',
+  };
+  if (process.env.NODE_ENV !== 'production') response.dev_code = code;
+  return response;
+}
+
+export async function verifyOrderLink(userId, code) {
+  const user = usersRepo.findById(userId);
+  if (!user) throw unauthorized('Please sign in to continue.');
+  const row = getDb()
+    .prepare(
+      `SELECT * FROM order_link_codes WHERE user_id = ? AND used_at IS NULL
+       ORDER BY id DESC LIMIT 1`
+    )
+    .get(userId);
+  if (!row) throw badRequest('The code is invalid or has expired.');
+  if (new Date(row.expires_at).getTime() < Date.now()) {
+    throw badRequest('The code has expired. Request a new one.');
+  }
+  if (!(await verifySecret(code, row.code_hash))) {
+    throw badRequest('The code is invalid or has expired.');
+  }
+
+  let linked = 0;
+  getDb().transaction(() => {
+    const result = getDb()
+      .prepare(
+        `UPDATE orders SET customer_id = ?, updated_at = datetime('now')
+         WHERE guest_phone = ? AND customer_id IS NULL`
+      )
+      .run(userId, user.phone);
+    linked = result.changes;
+    getDb()
+      .prepare("UPDATE order_link_codes SET used_at = datetime('now') WHERE id = ?")
+      .run(row.id);
+  })();
+  return {
+    linked,
+    message: linked
+      ? `${linked} past order${linked === 1 ? '' : 's'} linked to your account.`
+      : 'There were no past orders left to link.',
+  };
+}
+
 /** Data Protection Act 2012 (Act 843): subject access request. */
 export function exportMyData(userId) {
   const db = getDb();
