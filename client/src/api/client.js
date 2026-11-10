@@ -22,6 +22,15 @@ export function errorMessage(error) {
   return error.message || 'Something went wrong.';
 }
 
+const SESSION_FREE_PATHS = [
+  '/auth/csrf',
+  '/auth/login',
+  '/auth/register',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+  '/auth/me',
+];
+
 export async function api(path, { method = 'GET', body, formData, signal, headers = {} } = {}) {
   const options = { method, credentials: 'include', headers: { ...headers }, signal };
   if (formData) {
@@ -48,7 +57,12 @@ export async function api(path, { method = 'GET', body, formData, signal, header
       payload = await response.json().catch(() => null);
     }
     const error = payload?.error;
-    if (response.status === 401) window.dispatchEvent(new CustomEvent('auth:expired'));
+    if (response.status === 401 && !SESSION_FREE_PATHS.includes(path)) {
+      window.dispatchEvent(new CustomEvent('auth:expired'));
+    }
+    if (response.status === 403) {
+      window.dispatchEvent(new CustomEvent('auth:forbidden', { detail: { path, method } }));
+    }
     throw new ApiError(
       response.status,
       error?.code || 'REQUEST_FAILED',

@@ -16,6 +16,8 @@ export const HOME_ROUTES = {
   rider: '/rider',
 };
 
+export const CHANGE_PASSWORD_PATH = '/account/change-password';
+
 export const PUBLIC_PATHS = [
   '/',
   '/search',
@@ -34,9 +36,9 @@ const SIGNED_IN_PATHS = ['/notifications'];
 
 const ROLE_PATHS = {
   customer: ['/orders/*', '/account/*', '/refills', ...SIGNED_IN_PATHS],
-  pharmacist: ['/dashboard', '/staff/*', ...SIGNED_IN_PATHS],
-  admin: ['/dashboard', '/staff/*', '/admin/*', ...SIGNED_IN_PATHS],
-  rider: ['/rider/*', ...SIGNED_IN_PATHS],
+  pharmacist: ['/dashboard', '/staff/*', CHANGE_PASSWORD_PATH, ...SIGNED_IN_PATHS],
+  admin: ['/dashboard', '/staff/*', '/admin/*', CHANGE_PASSWORD_PATH, ...SIGNED_IN_PATHS],
+  rider: ['/rider/*', CHANGE_PASSWORD_PATH, ...SIGNED_IN_PATHS],
 };
 
 /** Canonical role URLs mapped onto the routes that already exist. */
