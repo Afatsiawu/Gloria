@@ -1,11 +1,14 @@
 import { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client.js';
+import { useAuth } from '../context/AuthContext.jsx';
 import { usePageTitle } from '../hooks/useApi.js';
 import { Field } from '../components/UI.jsx';
+import { CHANGE_PASSWORD_PATH, getHomeRoute } from '../config/roleRoutes.js';
 
 export default function ForgotPasswordPage() {
   usePageTitle('Forgot password');
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get('next') || '';
@@ -15,6 +18,10 @@ export default function ForgotPasswordPage() {
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  if (!loading && user) {
+    return <Navigate to={user.mustChangePassword ? CHANGE_PASSWORD_PATH : getHomeRoute(user.role)} replace />;
+  }
 
   const submit = async (event) => {
     event.preventDefault();

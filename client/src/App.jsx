@@ -4,7 +4,7 @@ import Layout from './components/Layout.jsx';
 import AccessWatcher from './components/AccessWatcher.jsx';
 import { RequireAuth, RequireRole } from './components/guards.jsx';
 import { Loading } from './components/UI.jsx';
-import { useAuth, roleHome } from './context/AuthContext.jsx';
+import { useAuth } from './context/AuthContext.jsx';
 
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
 const MedicinesPage = lazy(() => import('./pages/MedicinesPage.jsx'));
@@ -44,9 +44,8 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage.jsx'));
 const StyleGuidePage = import.meta.env.DEV ? lazy(() => import('./pages/StyleGuidePage.jsx')) : null;
 
 function HomeRedirect() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
   if (loading) return null;
-  if (user && user.role !== 'customer') return <Navigate to={roleHome(user.role)} replace />;
   return <HomePage />;
 }
 

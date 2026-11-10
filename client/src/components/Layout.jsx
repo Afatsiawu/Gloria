@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
+import { getHomeRoute } from '../config/roleRoutes.js';
 import { useCart } from '../context/CartContext.jsx';
 import NavMenu from './NavMenu.jsx';
 import { Icon, Modal } from './UI.jsx';
@@ -165,6 +166,7 @@ export default function Layout() {
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const isCustomer = user?.role === 'customer';
   const isStaff = ['pharmacist', 'admin', 'rider'].includes(user?.role);
+  const inStaffArea = /^\/(?:dashboard|staff|admin|rider)(?:\/|$)/.test(location.pathname);
 
   useEffect(() => {
     if (!location.hash) {
@@ -203,12 +205,14 @@ export default function Layout() {
     }
   };
 
-  if (isStaff) {
+  if (isStaff && inStaffArea) {
     return <StaffLayout user={user} groups={groupsFor(user)} logout={handleLogout} />;
   }
 
-  const accountTo = isCustomer ? '/account' : '/login';
-  const accountLabel = isCustomer ? 'Account' : 'Login';
+  const accountTo = user ? (isCustomer ? '/account' : getHomeRoute(user.role)) : '/login';
+  const accountLabel = user ? (isCustomer ? 'Account' : 'Dashboard') : 'Login';
+  const headerAccountLabel =
+    user && !isCustomer && location.pathname !== '/' ? 'Back to dashboard' : accountLabel;
   const menuSections = [
     {
       links: [
@@ -216,7 +220,7 @@ export default function Layout() {
         { to: '/medicines', label: 'Medicines' },
         { to: '/', hash: '#pharmacies', label: 'Pharmacies' },
         { to: '/track', label: 'Track order' },
-        { to: '/cart', label: 'Cart' },
+        ...(isStaff ? [] : [{ to: '/cart', label: 'Cart' }]),
         { to: accountTo, label: accountLabel },
       ],
     },
@@ -224,7 +228,7 @@ export default function Layout() {
 
   return (
     <div
-      className={`app-shell has-bottom-nav${location.pathname === '/' ? ' is-home' : ''}${location.pathname === '/cart' ? ' has-sticky-cart' : ''}${['/', '/medicines'].includes(location.pathname) ? ' hide-header-search' : ''}`}
+      className={`app-shell${isStaff ? '' : ' has-bottom-nav'}${location.pathname === '/' ? ' is-home' : ''}${location.pathname === '/cart' ? ' has-sticky-cart' : ''}${['/', '/medicines'].includes(location.pathname) ? ' hide-header-search' : ''}`}
     >
       <a className="skip-link" href="#main">
         Skip to main content
@@ -244,12 +248,14 @@ export default function Layout() {
           </nav>
           <div className="header-actions">
             <Link to={accountTo} className="header-account">
-              {accountLabel}
+              {headerAccountLabel}
             </Link>
-            <Link to="/cart" className="icon-link" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
-              <Icon name="Cart" size={22} />
-              {count > 0 ? <span className="cart-badge">{count}</span> : <span className="cart-dot" aria-hidden="true" />}
-            </Link>
+            {!isStaff && (
+              <Link to="/cart" className="icon-link" aria-label={`Cart, ${count} item${count === 1 ? '' : 's'}`}>
+                <Icon name="Cart" size={22} />
+                {count > 0 ? <span className="cart-badge">{count}</span> : <span className="cart-dot" aria-hidden="true" />}
+              </Link>
+            )}
             <button
               type="button"
               className="header-menu-button"
@@ -296,8 +302,8 @@ export default function Layout() {
             </div>
             <div className="footer-column">
               <p className="footer-heading">Account</p>
-              {isCustomer ? (
-                <Link to="/account">Your account</Link>
+              {user ? (
+                <Link to={accountTo}>{isCustomer ? 'Your account' : 'Dashboard'}</Link>
               ) : (
                 <>
                   <Link to="/login">Login</Link>
@@ -314,24 +320,26 @@ export default function Layout() {
           <p>© {new Date().getFullYear()} PharmaLink. All rights reserved.</p>
         </div>
       </footer>
-      <nav className="bottom-nav" aria-label="Quick links">
-        <NavLink to="/" end>
-          <Icon name="Home" size={22} />
-          Home
-        </NavLink>
-        <NavLink to="/medicines">
-          <Icon name="Search" size={22} />
-          Medicines
-        </NavLink>
-        <NavLink to="/cart">
-          <Icon name="Cart" size={22} />
-          Cart
-        </NavLink>
-        <NavLink to={accountTo}>
-          <Icon name="User" size={22} />
-          Account
-        </NavLink>
-      </nav>
+      {!isStaff && (
+        <nav className="bottom-nav" aria-label="Quick links">
+          <NavLink to="/" end>
+            <Icon name="Home" size={22} />
+            Home
+          </NavLink>
+          <NavLink to="/medicines">
+            <Icon name="Search" size={22} />
+            Medicines
+          </NavLink>
+          <NavLink to="/cart">
+            <Icon name="Cart" size={22} />
+            Cart
+          </NavLink>
+          <NavLink to={accountTo}>
+            <Icon name="User" size={22} />
+            Account
+          </NavLink>
+        </nav>
+      )}
       <NavMenu
         open={menuOpen}
         onClose={closeMenu}
