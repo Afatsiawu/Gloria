@@ -18,8 +18,15 @@ export default function ChangePasswordPage() {
   const [submitting, setSubmitting] = useState(false);
   const forced = Boolean(user?.mustChangePassword);
 
-  const submit = async (event) => {
-    event.preventDefault();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate('/', { replace: true });
+    }
+  };
+
+  const submit = async (event) => {    event.preventDefault();
     if (submitting) return;
     setError('');
     setSubmitting(true);
@@ -81,7 +88,7 @@ export default function ChangePasswordPage() {
       </form>
       {forced && (
         <p className="small muted form-links">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={logout}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleLogout}>
             Log out
           </button>
         </p>

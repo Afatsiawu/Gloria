@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getHomeRoute, getNavGroups } from '../config/roleRoutes.js';
+import { CHANGE_PASSWORD_PATH, getHomeRoute, getNavGroups } from '../config/roleRoutes.js';
 import { useCart } from '../context/CartContext.jsx';
 import NavMenu from './NavMenu.jsx';
 import { Icon, Modal } from './UI.jsx';
@@ -48,8 +48,22 @@ function MedicineSearch() {
   );
 }
 
-function StaffLayout({ user, groups, logout }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+function NoPharmacy({ user, onLogout }) {
+  return (
+    <div className="center-screen">
+      <h1 className="page-heading">No pharmacy assigned</h1>
+      <p className="muted">
+        Your account is not linked to a pharmacy yet. Ask an administrator to assign one, then sign in again.
+      </p>
+      {user?.full_name && <p className="small muted">{user.full_name}</p>}
+      <button type="button" className="btn btn-primary" onClick={onLogout}>
+        Log out
+      </button>
+    </div>
+  );
+}
+
+function StaffLayout({ user, groups, logout }) {  const [menuOpen, setMenuOpen] = useState(false);
   const menuButtonRef = useRef(null);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
 
@@ -122,7 +136,9 @@ export default function Layout() {
   const closeMenu = useCallback(() => setMenuOpen(false), []);
   const isCustomer = user?.role === 'customer';
   const isStaff = ['pharmacist', 'admin', 'rider'].includes(user?.role);
-  const inStaffArea = /^\/(?:dashboard|staff|admin|rider)(?:\/|$)/.test(location.pathname);
+  const inStaffArea =
+    /^\/(?:dashboard|staff|admin|rider)(?:\/|$)/.test(location.pathname) ||
+    (isStaff && location.pathname === CHANGE_PASSWORD_PATH);
 
   useEffect(() => {
     if (!location.hash) {
@@ -161,7 +177,14 @@ export default function Layout() {
     }
   };
 
+  if (user?.mustChangePassword && location.pathname !== CHANGE_PASSWORD_PATH) {
+    return <Navigate to={CHANGE_PASSWORD_PATH} replace />;
+  }
+
   if (isStaff && inStaffArea) {
+    if (user.role === 'pharmacist' && !user.pharmacy_id && !user.pharmacyId) {
+      return <NoPharmacy user={user} onLogout={handleLogout} />;
+    }
     return <StaffLayout user={user} groups={getNavGroups(user.role)} logout={handleLogout} />;
   }
 
