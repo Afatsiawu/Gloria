@@ -59,40 +59,70 @@ export const ROLE_NAV = {
   customer: [
     { label: 'Home', to: '/' },
     { label: 'Medicines', to: '/medicines' },
-    { label: 'Pharmacies', to: '/#pharmacies' },
+    { label: 'Pharmacies', to: '/', hash: '#pharmacies' },
     { label: 'Track order', to: '/track' },
     { label: 'Cart', to: '/cart' },
     { label: 'Account', to: '/account' },
   ],
   pharmacist: [
-    { label: 'Dashboard', to: '/dashboard' },
-    { label: 'Orders', to: '/staff/orders' },
-    { label: 'Prescriptions', to: '/staff/prescriptions' },
-    { label: 'Inventory and batches', to: '/staff/inventory' },
-    { label: 'Suppliers and purchasing', to: '/staff/suppliers' },
-    { label: 'Walk-in sales', to: '/staff/walk-in' },
-    { label: 'Reports', to: '/staff/reports' },
+    { label: 'Dashboard', to: '/dashboard', group: 'Orders' },
+    { label: 'Orders', to: '/staff/orders', group: 'Orders' },
+    { label: 'Prescriptions', to: '/staff/prescriptions', group: 'Orders' },
+    { label: 'Deliveries', to: '/staff/deliveries', group: 'Orders' },
+    { label: 'Inventory and batches', to: '/staff/inventory', group: 'Stock' },
+    { label: 'Walk-in sales', to: '/staff/walk-in', group: 'Stock' },
+    { label: 'Stock alerts', to: '/staff/alerts', group: 'Stock' },
+    { label: 'Purchase orders', to: '/staff/purchase-orders', group: 'Stock' },
+    { label: 'Suppliers and purchasing', to: '/staff/suppliers', group: 'Stock' },
+    { label: 'Delivery zones', to: '/staff/zones', group: 'Stock' },
+    { label: 'Reports', to: '/staff/reports', group: 'Reports' },
     { label: 'Log out', action: 'logout' },
   ],
   admin: [
-    { label: 'Dashboard', to: '/dashboard' },
-    { label: 'Orders', to: '/staff/orders' },
-    { label: 'Prescriptions', to: '/staff/prescriptions' },
-    { label: 'Inventory', to: '/staff/inventory' },
-    { label: 'Medicines and categories', to: '/admin/medicines' },
-    { label: 'Delivery zones', to: '/staff/zones' },
-    { label: 'Users and roles', to: '/admin/users' },
-    { label: 'Analytics', to: '/admin/analytics' },
-    { label: 'Reports', to: '/staff/reports' },
-    { label: 'Audit log', to: '/admin/audit' },
-    { label: 'Settings', to: '/admin/settings' },
+    { label: 'Dashboard', to: '/dashboard', group: 'Operations' },
+    { label: 'Orders', to: '/staff/orders', group: 'Operations' },
+    { label: 'Prescriptions', to: '/staff/prescriptions', group: 'Operations' },
+    { label: 'Deliveries', to: '/staff/deliveries', group: 'Operations' },
+    { label: 'Inventory', to: '/staff/inventory', group: 'Stock' },
+    { label: 'Walk-in sales', to: '/staff/walk-in', group: 'Stock' },
+    { label: 'Stock alerts', to: '/staff/alerts', group: 'Stock' },
+    { label: 'Purchase orders', to: '/staff/purchase-orders', group: 'Stock' },
+    { label: 'Suppliers', to: '/staff/suppliers', group: 'Stock' },
+    { label: 'Delivery zones', to: '/staff/zones', group: 'Stock' },
+    { label: 'Medicines and categories', to: '/admin/medicines', group: 'Administration' },
+    { label: 'Users and roles', to: '/admin/users', group: 'Administration' },
+    { label: 'Analytics', to: '/admin/analytics', group: 'Administration' },
+    { label: 'Reports', to: '/staff/reports', group: 'Administration' },
+    { label: 'Audit log', to: '/admin/audit', group: 'Administration' },
+    { label: 'Outbox', to: '/admin/outbox', group: 'Administration' },
+    { label: 'Settings', to: '/admin/settings', group: 'Administration' },
     { label: 'Log out', action: 'logout' },
   ],
   rider: [
-    { label: 'Deliveries', to: '/rider' },
+    { label: 'Deliveries', to: '/rider', group: 'Deliveries' },
     { label: 'Log out', action: 'logout' },
   ],
 };
+
+/**
+ * Menu sections for a role. Customer links have no group and render as one
+ * unlabelled section; staff roles get their labelled sidebar groups. Action
+ * entries such as "Log out" are handled by the layout, not as links.
+ */
+export function getNavGroups(role) {
+  const groups = [];
+  for (const item of ROLE_NAV[role] || []) {
+    if (!item.to) continue;
+    const title = item.group || null;
+    let group = groups.find((entry) => entry.title === title);
+    if (!group) {
+      group = { title, links: [] };
+      groups.push(group);
+    }
+    group.links.push({ label: item.label, to: item.to, ...(item.hash ? { hash: item.hash } : {}) });
+  }
+  return groups;
+}
 
 function escapeSegment(segment) {
   return segment.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

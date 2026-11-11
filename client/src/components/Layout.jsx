@@ -1,59 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { getHomeRoute } from '../config/roleRoutes.js';
+import { getHomeRoute, getNavGroups } from '../config/roleRoutes.js';
 import { useCart } from '../context/CartContext.jsx';
 import NavMenu from './NavMenu.jsx';
 import { Icon, Modal } from './UI.jsx';
-
-const STAFF_GROUPS = [
-  {
-    title: 'Orders',
-    links: [
-      { to: '/dashboard', label: 'Dashboard' },
-      { to: '/staff/orders', label: 'Orders' },
-      { to: '/staff/prescriptions', label: 'Prescriptions' },
-      { to: '/staff/deliveries', label: 'Deliveries' },
-    ],
-  },
-  {
-    title: 'Stock',
-    links: [
-      { to: '/staff/inventory', label: 'Inventory' },
-      { to: '/staff/walk-in', label: 'Walk-in sale' },
-      { to: '/staff/alerts', label: 'Stock alerts' },
-      { to: '/staff/purchase-orders', label: 'Purchase orders' },
-      { to: '/staff/suppliers', label: 'Suppliers' },
-      { to: '/staff/zones', label: 'Delivery zones' },
-    ],
-  },
-  {
-    title: 'Reports',
-    links: [{ to: '/staff/reports', label: 'Reports' }],
-  },
-];
-
-const ADMIN_LINKS = [
-  { to: '/admin/users', label: 'Users' },
-  { to: '/admin/medicines', label: 'Medicines' },
-  { to: '/admin/analytics', label: 'Analytics' },
-  { to: '/admin/audit', label: 'Audit log' },
-  { to: '/admin/outbox', label: 'Outbox' },
-  { to: '/admin/settings', label: 'Settings' },
-];
-
-const RIDER_LINKS = [{ to: '/rider', label: 'My deliveries' }];
-
-function groupsFor(user) {
-  if (user.role === 'rider') return [{ title: 'Deliveries', links: RIDER_LINKS }];
-  if (user.role === 'admin') {
-    return [
-      ...STAFF_GROUPS.slice(0, 2),
-      { title: 'Admin', links: [...STAFF_GROUPS[2].links, ...ADMIN_LINKS] },
-    ];
-  }
-  return STAFF_GROUPS;
-}
 
 function Logo({ to = '/' }) {
   return (
@@ -125,7 +76,12 @@ function StaffLayout({ user, groups, logout }) {
       <div className="staff-main">
         <div className="staff-topbar">
           <Logo />
-          <span className="staff-user">{user?.full_name}</span>
+          <span className="staff-user">
+            {user?.role === 'pharmacist' && (user.pharmacy_name || user.pharmacyName)
+              ? `${user.pharmacy_name || user.pharmacyName} · `
+              : ''}
+            {user?.full_name}
+          </span>
           <button
             type="button"
             className="staff-menu-button"
@@ -206,25 +162,21 @@ export default function Layout() {
   };
 
   if (isStaff && inStaffArea) {
-    return <StaffLayout user={user} groups={groupsFor(user)} logout={handleLogout} />;
+    return <StaffLayout user={user} groups={getNavGroups(user.role)} logout={handleLogout} />;
   }
 
   const accountTo = user ? (isCustomer ? '/account' : getHomeRoute(user.role)) : '/login';
   const accountLabel = user ? (isCustomer ? 'Account' : 'Dashboard') : 'Login';
   const headerAccountLabel =
     user && !isCustomer && location.pathname !== '/' ? 'Back to dashboard' : accountLabel;
-  const menuSections = [
-    {
-      links: [
-        { to: '/', label: 'Home' },
-        { to: '/medicines', label: 'Medicines' },
-        { to: '/', hash: '#pharmacies', label: 'Pharmacies' },
-        { to: '/track', label: 'Track order' },
-        ...(isStaff ? [] : [{ to: '/cart', label: 'Cart' }]),
-        { to: accountTo, label: accountLabel },
-      ],
-    },
-  ];
+  const menuSections = getNavGroups('customer').map((section) => ({
+    ...section,
+    links: section.links
+      .filter((link) => !isStaff || link.to !== '/cart')
+      .map((link) =>
+        isStaff && link.to === '/account' ? { label: 'Dashboard', to: accountTo } : link
+      ),
+  }));
 
   return (
     <div

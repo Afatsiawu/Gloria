@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   getHomeRoute,
+  getNavGroups,
   isRouteAllowed,
   sanitizeNext,
   toPathname,
@@ -140,5 +141,41 @@ describe('sanitizeNext', () => {
     expect(sanitizeNext('', 'pharmacist')).toBeNull();
     expect(sanitizeNext('/admin/settings', 'rider')).toBeNull();
     expect(getHomeRoute('rider')).toBe('/rider');
+  });
+});
+
+describe('role navigation', () => {
+  it('builds grouped staff menus without action entries', () => {
+    const groups = getNavGroups('pharmacist');
+    expect(groups.map((group) => group.title)).toEqual(['Orders', 'Stock', 'Reports']);
+    const links = groups.flatMap((group) => group.links);
+    expect(links.map((link) => link.to)).toContain('/staff/orders');
+    expect(links.map((link) => link.to)).not.toContain('/admin/users');
+    expect(links.some((link) => link.action)).toBe(false);
+  });
+
+  it('gives an admin both staff and administration pages', () => {
+    const targets = getNavGroups('admin').flatMap((group) => group.links.map((link) => link.to));
+    expect(targets).toContain('/staff/inventory');
+    expect(targets).toContain('/admin/users');
+    expect(targets).toContain('/admin/settings');
+  });
+
+  it('renders the customer links as one unlabelled section', () => {
+    const groups = getNavGroups('customer');
+    expect(groups).toHaveLength(1);
+    expect(groups[0].title).toBeNull();
+    expect(groups[0].links.map((link) => link.to)).toEqual([
+      '/',
+      '/medicines',
+      '/',
+      '/track',
+      '/cart',
+      '/account',
+    ]);
+  });
+
+  it('returns no menu for an unknown role', () => {
+    expect(getNavGroups('guest')).toEqual([]);
   });
 });
