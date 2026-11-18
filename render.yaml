@@ -14,16 +14,6 @@ services:
         value: 10000
       - key: CLIENT_ORIGIN
         sync: false
-      - key: DB_PATH
-        value: /var/data/pharmacy.db
-      - key: UPLOADS_DIR
-        value: /var/data/uploads
-      - key: PRESCRIPTIONS_DIR
-        value: /var/data/uploads/prescriptions
-      - key: BACKUPS_DIR
-        value: /var/data/backups
-      - key: REPORTS_DIR
-        value: /var/data/reports
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRES_IN
@@ -58,7 +48,7 @@ services:
         value: "14"
       - key: BACKUP_CRON
         value: "0 2 * * *"
-    disk:
-      name: pharmalink-data
-      mountPath: /var/data
-      sizeGB: 1
+    # Free tier has no persistent disk. The database and uploads live on the
+    # instance's ephemeral filesystem and are re-seeded on a fresh deploy.
+    # Upgrade to a paid plan and re-add a disk mounted at /var/data for
+    # persistence (then set DB_PATH=/var/data/pharmacy.db etc.).
