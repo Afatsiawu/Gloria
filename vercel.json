@@ -7,21 +7,7 @@
     },
     "server": {
       "root": "server",
-      "framework": "express",
-      "env": {
-        "NODE_ENV": "production",
-        "DB_PATH": "/tmp/pharmacy.db",
-        "UPLOADS_DIR": "/tmp/uploads",
-        "PRESCRIPTIONS_DIR": "/tmp/uploads/prescriptions",
-        "BACKUPS_DIR": "/tmp/backups",
-        "REPORTS_DIR": "/tmp/reports",
-        "COOKIE_SECURE": "true",
-        "AUTO_SEED": "true",
-        "ENABLE_CRON": "false",
-        "PAYMENT_PROVIDER": "mock",
-        "SMS_PROVIDER": "mock",
-        "EMAIL_PROVIDER": "mock"
-      }
+      "framework": "express"
     }
   },
   "rewrites": [
