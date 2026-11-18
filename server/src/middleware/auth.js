@@ -14,7 +14,7 @@ export function signToken(user) {
 export function setAuthCookie(res, token) {
   res.cookie(TOKEN_COOKIE, token, {
     httpOnly: true,
-    sameSite: 'lax',
+    sameSite: config.cookieSecure ? 'none' : 'lax',
     secure: config.cookieSecure,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
@@ -22,7 +22,11 @@ export function setAuthCookie(res, token) {
 }
 
 export function clearAuthCookie(res) {
-  res.clearCookie(TOKEN_COOKIE, { path: '/' });
+  res.clearCookie(TOKEN_COOKIE, {
+    path: '/',
+    sameSite: config.cookieSecure ? 'none' : 'lax',
+    secure: config.cookieSecure,
+  });
 }
 
 export function findUserById(id) {

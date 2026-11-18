@@ -4,13 +4,13 @@ import { useFetch, usePageTitle } from '../../hooks/useApi.js';
 import {
   Alert,
   Badge,
+  DataTable,
   EmptyState,
   ErrorState,
   Field,
   Modal,
-  PageHeader,
+  PageTitle,
   Pagination,
-  Skeleton,
 } from '../../components/UI.jsx';
 import { formatMoney } from '../../utils/format.js';
 
@@ -166,10 +166,9 @@ export default function MedicinesPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Administration"
-        title="Medicines & prices"
-        subtitle="Manage the master catalogue. Base prices are applied to all pharmacies; pharmacists can then adjust their own outlet price."
+      <PageTitle
+        title="Medicines"
+        subtitle="Catalogue and base prices."
         actions={
           <div className="row">
             <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setCategoryModal(true); setActionError(null); }}>Categories</button>
@@ -181,24 +180,20 @@ export default function MedicinesPage() {
       {notice && <Alert tone="success">{notice}</Alert>}
       {actionError && !modal && !priceModal && !categoryModal && <Alert tone="error">{actionError.message}</Alert>}
 
-      <div className="card mb-2">
-        <div className="card-body">
-          <form className="form-grid" onSubmit={(event) => event.preventDefault()}>
-            <Field label="Search" htmlFor="medicine-q">
-              <input id="medicine-q" value={q} onChange={(event) => { setQ(event.target.value); setPage(1); }} placeholder="Brand or generic name" />
-            </Field>
-            <Field label="Category" htmlFor="medicine-category">
-              <select id="medicine-category" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1); }}>
-                <option value="">All categories</option>
-                {(categories.data?.items || []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-              </select>
-            </Field>
-          </form>
-        </div>
+      <div className="toolbar">
+        <Field label="Search" htmlFor="medicine-q" className="inline-field">
+          <input id="medicine-q" value={q} onChange={(event) => { setQ(event.target.value); setPage(1); }} placeholder="Brand or generic name" />
+        </Field>
+        <Field label="Category" htmlFor="medicine-category" className="inline-field">
+          <select id="medicine-category" value={categoryId} onChange={(event) => { setCategoryId(event.target.value); setPage(1); }}>
+            <option value="">All categories</option>
+            {(categories.data?.items || []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+          </select>
+        </Field>
       </div>
 
       {medicines.error && <ErrorState error={medicines.error} retry={medicines.reload} />}
-      {medicines.loading && <Skeleton lines={8} />}
+      {medicines.loading && <p className="loading">Loading…</p>}
 
       {!medicines.loading && !medicines.error && items.length === 0 && (
         <EmptyState title="No medicines match" action={<button type="button" className="btn btn-primary" onClick={openCreate}>Add a medicine</button>}>
@@ -208,44 +203,36 @@ export default function MedicinesPage() {
 
       {!medicines.loading && items.length > 0 && (
         <>
-          <div className="table-wrap card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Medicine</th>
-                  <th>Category</th>
-                  <th>Rx</th>
-                  <th className="text-right">From</th>
-                  <th className="text-right">Pharmacies</th>
-                  <th className="text-right">Stock</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((medicine) => (
-                  <tr key={medicine.id}>
-                    <td>
-                      <strong>{medicine.brand_name}{medicine.strength ? ` ${medicine.strength}` : ''}</strong>
-                      <div className="tiny muted">{medicine.generic_name}{medicine.dosage_form ? ` · ${medicine.dosage_form}` : ''}</div>
-                    </td>
-                    <td className="small">{medicine.category_name || '—'}</td>
-                    <td>{medicine.requires_prescription ? <Badge tone="warning">Rx</Badge> : <Badge tone="success">OTC</Badge>}</td>
-                    <td className="text-right">{formatMoney(medicine.min_price)}</td>
-                    <td className="text-right">{medicine.pharmacy_count}</td>
-                    <td className="text-right">{medicine.stock}</td>
-                    <td><Badge tone={medicine.is_active ? 'success' : 'neutral'}>{medicine.is_active ? 'Active' : 'Inactive'}</Badge></td>
-                    <td>
-                      <div className="table-actions">
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(medicine)}>Edit</button>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => openPrice(medicine)}>Price</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[
+              {
+                key: 'brand_name',
+                label: 'Medicine',
+                render: (medicine) => (
+                  <>
+                    <strong>{medicine.brand_name}{medicine.strength ? ` ${medicine.strength}` : ''}</strong>
+                    <div className="tiny muted">{medicine.generic_name}{medicine.dosage_form ? ` · ${medicine.dosage_form}` : ''}</div>
+                  </>
+                ),
+              },
+              { key: 'category_name', label: 'Category', render: (medicine) => medicine.category_name || '—' },
+              { key: 'requires_prescription', label: 'Rx', render: (medicine) => (medicine.requires_prescription ? <Badge tone="warning">Rx</Badge> : <Badge tone="success">OTC</Badge>) },
+              { key: 'min_price', label: 'From', align: 'right', render: (medicine) => formatMoney(medicine.min_price) },
+              { key: 'stock', label: 'Stock', align: 'right' },
+              { key: 'is_active', label: 'Status', render: (medicine) => <Badge tone={medicine.is_active ? 'success' : 'neutral'}>{medicine.is_active ? 'Active' : 'Inactive'}</Badge> },
+              {
+                key: 'actions',
+                label: 'Actions',
+                render: (medicine) => (
+                  <div className="table-actions">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(medicine)}>Edit</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => openPrice(medicine)}>Price</button>
+                  </div>
+                ),
+              },
+            ]}
+            rows={items}
+          />
           <Pagination pagination={medicines.data?.pagination} onPage={setPage} />
         </>
       )}
@@ -258,7 +245,7 @@ export default function MedicinesPage() {
         footer={
           <div className="row">
             <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-            <button type="submit" form="medicine-form" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save medicine'}</button>
+            <button type="submit" form="medicine-form" className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : 'Save medicine'}</button>
           </div>
         }
       >
@@ -283,7 +270,7 @@ export default function MedicinesPage() {
                 {(categories.data?.items || []).map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
               </select>
             </Field>
-            <Field label="Base price (GHS)" htmlFor="med-price" required hint="Applied to every pharmacy when a medicine is created or its base price changes.">
+            <Field label="Base price (GHS)" htmlFor="med-price" required hint="Applied to every pharmacy when the base price changes.">
               <input id="med-price" type="number" min="0" step="0.01" value={form.price} onChange={update('price')} required />
             </Field>
             <Field label="Default reorder level" htmlFor="med-reorder">
@@ -303,21 +290,17 @@ export default function MedicinesPage() {
               Active in the catalogue
             </label>
           </div>
-          <Alert tone="warning">
-            Marking a medicine prescription-only means new orders cannot be verified without an approved
-            prescription.
-          </Alert>
         </form>
       </Modal>
 
       <Modal
         open={Boolean(priceModal)}
         onClose={() => setPriceModal(null)}
-        title={priceModal ? `Set pharmacy price — ${priceModal.brand_name}` : 'Set pharmacy price'}
+        title={priceModal ? `Pharmacy price: ${priceModal.brand_name}` : 'Pharmacy price'}
         footer={
           <div className="row">
             <button type="button" className="btn btn-ghost" onClick={() => setPriceModal(null)}>Cancel</button>
-            <button type="submit" form="price-form" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save price'}</button>
+            <button type="submit" form="price-form" className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : 'Save price'}</button>
           </div>
         }
       >
@@ -346,7 +329,7 @@ export default function MedicinesPage() {
         </form>
       </Modal>
 
-      <Modal open={categoryModal} onClose={() => setCategoryModal(false)} title="Medicine categories">
+      <Modal open={categoryModal} onClose={() => setCategoryModal(false)} title="Categories">
         {actionError && <Alert tone="error">{actionError.message}</Alert>}
         <form onSubmit={addCategory} className="row mb-2">
           <div className="field full">
@@ -355,16 +338,14 @@ export default function MedicinesPage() {
           </div>
           <button type="submit" className="btn btn-primary">Add</button>
         </form>
-        <div className="alert-list">
+        <div className="selection-list">
           {(categories.data?.items || []).map((category) => (
-            <div className="alert-item" key={category.id}>
-              <div className="row between full">
-                <div>
-                  <strong>{category.name}</strong>
-                  <div className="tiny muted">{category.medicine_count} medicines</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => deleteCategory(category)}>Delete</button>
+            <div className="selection-row" key={category.id}>
+              <div className="info">
+                <strong>{category.name}</strong>
+                <span>{category.medicine_count} medicines</span>
               </div>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => deleteCategory(category)}>Delete</button>
             </div>
           ))}
         </div>

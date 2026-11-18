@@ -4,15 +4,15 @@ import { useFetch, usePageTitle } from '../../hooks/useApi.js';
 import {
   Alert,
   Badge,
+  DataTable,
   EmptyState,
   ErrorState,
   Field,
   Modal,
-  PageHeader,
+  PageTitle,
   Pagination,
-  Skeleton,
 } from '../../components/UI.jsx';
-import { formatDate, titleCase } from '../../utils/format.js';
+import { titleCase } from '../../utils/format.js';
 
 const EMPTY = {
   fullName: '',
@@ -115,79 +115,71 @@ export default function UsersPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Administration"
-        title="Users & roles"
-        subtitle="Create staff accounts, assign a pharmacy, reset passwords and suspend access."
+      <PageTitle
+        title="Users"
+        subtitle="Staff accounts, pharmacy assignment and access."
         actions={<button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>Add user</button>}
       />
 
       {notice && <Alert tone="success">{notice}</Alert>}
       {actionError && !modal && <Alert tone="error">{actionError.message}</Alert>}
 
-      <div className="card mb-2">
-        <div className="card-body">
-          <form className="form-grid" onSubmit={(event) => event.preventDefault()}>
-            <Field label="Search users" htmlFor="user-q">
-              <input id="user-q" value={q} onChange={(event) => { setQ(event.target.value); setPage(1); }} placeholder="Name, phone or email" />
-            </Field>
-            <Field label="Role" htmlFor="user-role">
-              <select id="user-role" value={role} onChange={(event) => { setRole(event.target.value); setPage(1); }}>
-                <option value="">All roles</option>
-                <option value="customer">Customers</option>
-                <option value="pharmacist">Pharmacists</option>
-                <option value="admin">Administrators</option>
-                <option value="rider">Riders</option>
-              </select>
-            </Field>
-          </form>
-        </div>
+      <div className="toolbar">
+        <Field label="Search" htmlFor="user-q" className="inline-field">
+          <input id="user-q" value={q} onChange={(event) => { setQ(event.target.value); setPage(1); }} placeholder="Name, phone or email" />
+        </Field>
+        <Field label="Role" htmlFor="user-role" className="inline-field">
+          <select id="user-role" value={role} onChange={(event) => { setRole(event.target.value); setPage(1); }}>
+            <option value="">All roles</option>
+            <option value="customer">Customers</option>
+            <option value="pharmacist">Pharmacists</option>
+            <option value="admin">Administrators</option>
+            <option value="rider">Riders</option>
+          </select>
+        </Field>
       </div>
 
       {users.error && <ErrorState error={users.error} retry={users.reload} />}
-      {users.loading && <Skeleton lines={8} />}
+      {users.loading && <p className="loading">Loading…</p>}
 
       {!users.loading && !users.error && items.length === 0 && (
-        <EmptyState title="No users match">Try a different search or role filter.</EmptyState>
+        <EmptyState title="No users match">Try a different search or role.</EmptyState>
       )}
 
       {!users.loading && items.length > 0 && (
         <>
-          <div className="table-wrap card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Role</th>
-                  <th>Phone</th>
-                  <th>Pharmacy</th>
-                  <th>Community</th>
-                  <th>Status</th>
-                  <th>Joined</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map((user) => (
-                  <tr key={user.id}>
-                    <td><strong>{user.full_name}</strong><div className="tiny muted">{user.email || '—'}</div></td>
-                    <td><Badge tone={user.role === 'admin' ? 'teal' : user.role === 'pharmacist' ? 'info' : 'neutral'}>{titleCase(user.role)}</Badge></td>
-                    <td>{user.phone}</td>
-                    <td className="small">{user.pharmacy_name || '—'}</td>
-                    <td className="small">{user.community || '—'}</td>
-                    <td><Badge tone={user.is_active ? 'success' : 'danger'}>{user.is_active ? 'Active' : 'Suspended'}</Badge></td>
-                    <td className="small muted">{formatDate(user.created_at)}</td>
-                    <td>
-                      <div className="table-actions">
-                        <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(user)}>Edit</button>
-                        <button type="button" className="btn btn-ghost btn-sm" onClick={() => toggleActive(user)}>{user.is_active ? 'Suspend' : 'Activate'}</button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            columns={[
+              {
+                key: 'full_name',
+                label: 'Name',
+                render: (user) => (
+                  <>
+                    <strong>{user.full_name}</strong>
+                    <div className="tiny muted">{user.phone}{user.email ? ` · ${user.email}` : ''}</div>
+                  </>
+                ),
+              },
+              { key: 'role', label: 'Role', render: (user) => titleCase(user.role) },
+              { key: 'pharmacy_name', label: 'Pharmacy', render: (user) => user.pharmacy_name || '—' },
+              {
+                key: 'is_active',
+                label: 'Status',
+                render: (user) => <Badge tone={user.is_active ? 'success' : 'danger'}>{user.is_active ? 'Active' : 'Suspended'}</Badge>,
+              },
+              {
+                key: 'actions',
+                label: 'Actions',
+                render: (user) => (
+                  <div className="table-actions">
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(user)}>Edit</button>
+                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => toggleActive(user)}>{user.is_active ? 'Suspend' : 'Activate'}</button>
+                  </div>
+                ),
+              },
+            ]}
+            rows={items}
+          />
           <Pagination pagination={users.data?.pagination} onPage={setPage} />
         </>
       )}
@@ -200,7 +192,7 @@ export default function UsersPage() {
         footer={
           <div className="row">
             <button type="button" className="btn btn-ghost" onClick={() => setModal(null)}>Cancel</button>
-            <button type="submit" form="user-form" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save user'}</button>
+            <button type="submit" form="user-form" className="btn btn-primary" disabled={busy}>{busy ? 'Please wait…' : 'Save user'}</button>
           </div>
         }
       >
@@ -210,7 +202,7 @@ export default function UsersPage() {
             <Field label="Full name" htmlFor="user-fullname" required>
               <input id="user-fullname" value={form.fullName} onChange={update('fullName')} required />
             </Field>
-            <Field label="Phone" htmlFor="user-phone" required hint="Ghana mobile number.">
+            <Field label="Phone" htmlFor="user-phone" required>
               <input id="user-phone" value={form.phone} onChange={update('phone')} required />
             </Field>
             <Field label="Email" htmlFor="user-email">
@@ -242,7 +234,7 @@ export default function UsersPage() {
                 </select>
               </Field>
             )}
-            <Field label={modal?.id ? 'New password (optional)' : 'Password'} htmlFor="user-password" required={!modal?.id} hint="At least 8 characters with a letter and a number.">
+            <Field label={modal?.id ? 'New password (optional)' : 'Password'} htmlFor="user-password" required={!modal?.id}>
               <input id="user-password" type="password" value={form.password} onChange={update('password')} required={!modal?.id} minLength={8} autoComplete="new-password" />
             </Field>
           </div>
@@ -251,7 +243,7 @@ export default function UsersPage() {
               <Field label="Delivery address" htmlFor="user-address">
                 <textarea id="user-address" rows={2} value={form.deliveryAddress} onChange={update('deliveryAddress')} />
               </Field>
-              <Field label="Digital address" htmlFor="user-digital" hint="Ghana Post GPS, for example GA-123-4567.">
+              <Field label="Digital address" htmlFor="user-digital">
                 <input id="user-digital" value={form.digitalAddressCode} onChange={update('digitalAddressCode')} />
               </Field>
             </>

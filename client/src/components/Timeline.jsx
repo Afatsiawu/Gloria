@@ -1,5 +1,4 @@
-import { formatDateTime, statusLabel } from '../utils/format.js';
-import { Icon } from './UI.jsx';
+import { formatDateTime } from '../utils/format.js';
 
 function buildSteps(order) {
   if (order.status === 'cancelled') {
@@ -47,15 +46,12 @@ export default function Timeline({ order }) {
         const isCurrent = currentRank === rank && !['completed', 'cancelled'].includes(order.status);
         return (
           <li key={step.key} className={`timeline-step ${done ? 'done' : ''} ${isCurrent ? 'current' : ''}`}>
-            <span className="timeline-dot" aria-hidden="true">
-              {done ? <Icon name="Check" size={16} /> : null}
-            </span>
-            <div>
+            <span className="timeline-dot" aria-hidden="true" />
+            <div className="timeline-body">
               <strong>{step.label}</strong>
               {event?.created_at && <span className="timeline-time">{formatDateTime(event.created_at)}</span>}
               {event?.note && <p className="timeline-note">{event.note}</p>}
-              {isCurrent && <span className="badge badge-info">Current stage</span>}
-              {step.key === 'cancelled' && <span className="badge badge-danger">{statusLabel('cancelled')}</span>}
+              {isCurrent && <span className="current-label">Current stage</span>}
             </div>
           </li>
         );

@@ -6,14 +6,13 @@ export default function NotFoundPage() {
   usePageTitle('Page not found');
   return (
     <EmptyState
+      icon="Warning"
       title="Page not found"
       action={
-        <div className="hero-actions">
-          <Link to="/" className="btn btn-primary">Go home</Link>
-          <Link to="/search" className="btn btn-secondary">Find medicines</Link>
-        </div>
+        <Link to="/" className="btn btn-primary">Go home</Link>
       }
     >
+      <span className="notfound-code">Error 404</span>
       The page you asked for does not exist or has moved. Check the address or use the navigation above.
     </EmptyState>
   );

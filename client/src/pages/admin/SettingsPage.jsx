@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client.js';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
-import { Alert, Badge, EmptyState, ErrorState, Field, PageHeader, Skeleton } from '../../components/UI.jsx';
+import {
+  Alert,
+  Badge,
+  EmptyState,
+  ErrorState,
+  Field,
+  PageTitle,
+} from '../../components/UI.jsx';
 import { formatDateTime, titleCase } from '../../utils/format.js';
 
 export default function SettingsPage() {
-  usePageTitle('Settings & privacy');
+  usePageTitle('Settings');
   const settings = useFetch('/admin/settings');
   const backups = useFetch('/admin/backups');
   const requests = useFetch('/admin/data-requests');
@@ -26,7 +33,7 @@ export default function SettingsPage() {
     try {
       const payload = Object.fromEntries(Object.entries(values).map(([key, value]) => [key, Number(value)]));
       await api('/admin/settings', { method: 'PATCH', body: payload });
-      setNotice('Settings updated. Cron jobs and forecasts will use the new values.');
+      setNotice('Settings updated.');
       settings.reload();
     } catch (err) {
       setError(err);
@@ -66,124 +73,106 @@ export default function SettingsPage() {
     }
   };
 
-  if (settings.loading) return <Skeleton lines={8} />;
+  if (settings.loading) return <p className="loading">Loading…</p>;
   if (settings.error) return <ErrorState error={settings.error} retry={settings.reload} />;
 
   const definitions = settings.data?.definitions || {};
+  const backupItems = backups.data?.items || [];
+  const requestItems = requests.data?.items || [];
 
   return (
     <>
-      <PageHeader
-        eyebrow="Administration"
-        title="Settings, privacy & backups"
-        subtitle="Operational thresholds, scheduled backups and data-protection requests."
-      />
+      <PageTitle title="Settings" subtitle="Operational thresholds, backups and data-protection requests." />
 
       {notice && <Alert tone="success">{notice}</Alert>}
       {error && <Alert tone="error">{error.message}</Alert>}
 
-      <div className="grid grid-2">
-        <section className="card">
-          <div className="card-header"><h2>Operational settings</h2></div>
-          <div className="card-body">
-            <form onSubmit={save} className="stack">
-              {Object.entries(definitions).map(([key, definition]) => (
-                <Field key={key} label={definition.label} htmlFor={`setting-${key}`} hint={`Allowed range: ${definition.min}–${definition.max}.`}>
-                  <input
-                    id={`setting-${key}`}
-                    type="number"
-                    min={definition.min}
-                    max={definition.max}
-                    value={values[key] ?? ''}
-                    onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
-                  />
-                </Field>
-              ))}
-              <button type="submit" className="btn btn-primary" disabled={busy === 'settings'}>
-                {busy === 'settings' ? 'Saving…' : 'Save settings'}
-              </button>
-            </form>
-          </div>
-        </section>
-
-        <div className="stack">
-          <section className="card">
-            <div className="card-header">
-              <h2>Database backups</h2>
-              <button type="button" className="btn btn-secondary btn-sm" onClick={createBackup} disabled={busy === 'backup'}>
-                {busy === 'backup' ? 'Backing up…' : 'Back up now'}
-              </button>
-            </div>
-            <div className="card-body">
-              <p className="small muted">
-                SQLite is backed up with the online backup API. A nightly job also runs and files older than the
-                retention period are pruned. Store copies off the server for disaster recovery.
-              </p>
-              {(backups.data?.items || []).length === 0 ? (
-                <p className="muted mb-0">No backups yet.</p>
-              ) : (
-                <div className="table-wrap">
-                  <table>
-                    <thead><tr><th>Filename</th><th className="text-right">Size</th><th>Created</th></tr></thead>
-                    <tbody>
-                      {backups.data.items.map((backup) => (
-                        <tr key={backup.file}>
-                          <td className="small">{backup.file}</td>
-                          <td className="text-right small">{Math.round(backup.size_bytes / 1024)} KB</td>
-                          <td className="small muted">{formatDateTime(backup.created_at)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="card">
-            <div className="card-header"><h2>Data-protection requests</h2></div>
-            <div className="card-body">
-              {(requests.data?.items || []).length === 0 ? (
-                <p className="muted mb-0">No export or deletion requests.</p>
-              ) : (
-                <div className="alert-list">
-                  {requests.data.items.map((request) => (
-                    <div className="alert-item" key={request.id}>
-                      <div className="row between full">
-                        <div>
-                          <div className="row">
-                            <strong>{request.full_name}</strong>
-                            <Badge tone={request.type === 'delete' ? 'danger' : 'info'}>{titleCase(request.type)}</Badge>
-                            <Badge tone={request.status === 'completed' ? 'success' : 'warning'}>{request.status}</Badge>
-                          </div>
-                          <div className="tiny muted">{request.phone} · requested {formatDateTime(request.created_at)}</div>
-                        </div>
-                        {request.status !== 'completed' && (
-                          <button type="button" className="btn btn-secondary btn-sm" disabled={busy === `request-${request.id}`} onClick={() => processRequest(request)}>
-                            Process
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </section>
-        </div>
-      </div>
-
-      <section className="card mt-3">
-        <div className="card-header"><h2>Data-retention notes</h2></div>
-        <div className="card-body">
-          <ul className="small muted">
-            <li>Deletion requests anonymise the customer profile but retain order, payment and audit records that pharmacies must keep.</li>
-            <li>Prescription files live outside the web root and are served only through an authenticated, role-checked endpoint.</li>
-            <li>Customer data exports include profile, orders, prescriptions metadata, notifications, refill reminders and prior requests.</li>
-            <li>Audit entries are append-only and include before/after values for investigation.</li>
-          </ul>
-        </div>
+      <section>
+        <h2 className="section-heading">Operational settings</h2>
+        <form onSubmit={save} className="form-narrow">
+          {Object.entries(definitions).map(([key, definition]) => (
+            <Field key={key} label={definition.label} htmlFor={`setting-${key}`} hint={`Allowed range: ${definition.min}–${definition.max}.`}>
+              <input
+                id={`setting-${key}`}
+                type="number"
+                inputMode="numeric"
+                min={definition.min}
+                max={definition.max}
+                value={values[key] ?? ''}
+                onChange={(event) => setValues((current) => ({ ...current, [key]: event.target.value }))}
+              />
+            </Field>
+          ))}
+          <button type="submit" className="btn btn-primary" disabled={busy === 'settings'}>
+            {busy === 'settings' ? 'Please wait…' : 'Save settings'}
+          </button>
+        </form>
       </section>
+
+      <section>
+        <div className="row between">
+          <h2 className="section-heading">Database backups</h2>
+          <button type="button" className="btn btn-secondary btn-sm" onClick={createBackup} disabled={busy === 'backup'}>
+            {busy === 'backup' ? 'Backing up…' : 'Back up now'}
+          </button>
+        </div>
+        <p className="hint">A nightly backup also runs automatically. Older files are pruned after the retention period.</p>
+        {backupItems.length === 0 ? (
+          <p className="muted">No backups yet.</p>
+        ) : (
+          <div className="table-wrap">
+            <table>
+              <thead><tr><th>Filename</th><th className="num">Size</th><th>Created</th></tr></thead>
+              <tbody>
+                {backupItems.map((backup) => (
+                  <tr key={backup.file}>
+                    <td data-label="Filename">{backup.file}</td>
+                    <td data-label="Size" className="num">{Math.round(backup.size_bytes / 1024)} KB</td>
+                    <td data-label="Created">{formatDateTime(backup.created_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section>
+        <h2 className="section-heading">Data-protection requests</h2>
+        {requestItems.length === 0 ? (
+          <EmptyState title="No requests">No export or deletion requests have been made.</EmptyState>
+        ) : (
+          <div className="selection-list">
+            {requestItems.map((request) => (
+              <div className="selection-row" key={request.id}>
+                <div className="info">
+                  <div className="row">
+                    <strong>{request.full_name}</strong>
+                    <Badge tone={request.type === 'delete' ? 'danger' : 'info'}>{titleCase(request.type)}</Badge>
+                    <Badge tone={request.status === 'completed' ? 'success' : 'warning'}>{request.status}</Badge>
+                  </div>
+                  <span>{request.phone} · {formatDateTime(request.created_at)}</span>
+                </div>
+                {request.status !== 'completed' && (
+                  <button type="button" className="btn btn-secondary btn-sm" disabled={busy === `request-${request.id}`} onClick={() => processRequest(request)}>
+                    Process
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      <details className="details-block">
+        <summary>Data retention notes</summary>
+        <ul className="small muted">
+          <li>Deletion requests anonymise the customer profile but keep order, payment and audit records.</li>
+          <li>Prescription files are stored outside the web root and served through authenticated endpoints.</li>
+          <li>Exports include profile, orders, prescription metadata, notifications, refill reminders and requests.</li>
+          <li>Audit entries are append-only and include before and after values.</li>
+        </ul>
+      </details>
     </>
   );
 }

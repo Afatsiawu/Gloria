@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { api } from '../../api/client.js';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
-import { Alert, Badge, EmptyState, ErrorState, PageHeader, Skeleton, Tabs } from '../../components/UI.jsx';
+import { Alert, Badge, EmptyState, ErrorState, PageTitle, Tabs } from '../../components/UI.jsx';
 import { formatDateTime, titleCase } from '../../utils/format.js';
 
 export default function OutboxPage() {
-  usePageTitle('Mock outbox');
+  usePageTitle('Outbox');
   const [channel, setChannel] = useState('all');
   const [busy, setBusy] = useState(null);
   const [notice, setNotice] = useState(null);
@@ -32,26 +32,17 @@ export default function OutboxPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Developer tools"
-        title="Mock message outbox"
-        subtitle="Every SMS, email and in-app notification is retained here. Real providers can be plugged in through the adapter pattern without changing business code."
-        actions={<button type="button" className="btn btn-ghost btn-sm" onClick={reload}>Refresh</button>}
-      />
-
-      <Alert tone="info">
-        This page is available in development and test only. It returns 404 when NODE_ENV=production.
-      </Alert>
+      <PageTitle title="Outbox" subtitle="Messages sent by the system. Available in development and test only." />
 
       {notice && <Alert tone="success">{notice}</Alert>}
       {error && <Alert tone="error">{error.message}</Alert>}
 
       <div className="row mb-2">
         <button type="button" className="btn btn-secondary btn-sm" disabled={busy === 'stock-alerts'} onClick={() => runJob('stock-alerts')}>
-          {busy === 'stock-alerts' ? 'Running…' : 'Run stock alerts job'}
+          {busy === 'stock-alerts' ? 'Please wait…' : 'Run stock alerts'}
         </button>
         <button type="button" className="btn btn-secondary btn-sm" disabled={busy === 'refill-reminders'} onClick={() => runJob('refill-reminders')}>
-          {busy === 'refill-reminders' ? 'Running…' : 'Run refill reminders job'}
+          {busy === 'refill-reminders' ? 'Please wait…' : 'Run refill reminders'}
         </button>
       </div>
 
@@ -64,33 +55,32 @@ export default function OutboxPage() {
         ]}
         active={channel}
         onChange={setChannel}
+        label="Message channel"
       />
 
       {loadError && <ErrorState error={loadError} retry={reload} />}
-      {loading && <Skeleton lines={6} />}
+      {loading && <p className="loading">Loading…</p>}
 
       {!loading && !loadError && items.length === 0 && (
-        <EmptyState title="Outbox is empty">Notifications appear after orders, prescription decisions and reminder jobs.</EmptyState>
+        <EmptyState title="Outbox is empty">Messages appear after orders, prescription decisions and reminder jobs.</EmptyState>
       )}
 
       {!loading && items.length > 0 && (
-        <div className="card">
-          <div className="card-body">
-            {items.map((item) => (
-              <div className="notification-item" key={item.id}>
-                <div>
-                  <div className="row">
-                    <Badge tone={item.channel === 'in_app' ? 'info' : item.channel === 'sms' ? 'teal' : 'neutral'}>{item.channel}</Badge>
-                    <Badge tone={item.status === 'sent' ? 'success' : 'warning'}>{item.status}</Badge>
-                    <span className="tiny muted">User #{item.user_id}{item.order_id ? ` · Order #${item.order_id}` : ''}</span>
-                  </div>
-                  <p className="mb-0 mt-1">{item.message}</p>
-                  <span className="notification-meta">{titleCase(item.event)} · {formatDateTime(item.created_at)}</span>
+        <ul className="notification-list">
+          {items.map((item) => (
+            <li className="notification-item" key={item.id}>
+              <div className="notification-head">
+                <div className="row">
+                  <Badge tone={item.status === 'sent' ? 'success' : 'warning'}>{item.status}</Badge>
+                  <span className="small">{item.channel}</span>
                 </div>
+                <span className="tiny muted">{formatDateTime(item.created_at)}</span>
               </div>
-            ))}
-          </div>
-        </div>
+              <p>{item.message}</p>
+              <span className="tiny muted">{titleCase(item.event)} · User #{item.user_id}{item.order_id ? ` · Order #${item.order_id}` : ''}</span>
+            </li>
+          ))}
+        </ul>
       )}
     </>
   );

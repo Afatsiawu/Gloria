@@ -18,7 +18,7 @@ export function ensureCsrfCookie(req, res, next) {
   // (double-submit pattern: cookie + X-CSRF-Token header must match).
   res.cookie(CSRF_COOKIE, token, {
     httpOnly: false,
-    sameSite: 'lax',
+    sameSite: config.cookieSecure ? 'none' : 'lax',
     secure: config.cookieSecure,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',

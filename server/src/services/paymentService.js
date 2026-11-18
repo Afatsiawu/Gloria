@@ -2,7 +2,7 @@ import { getDb } from '../db/index.js';
 import * as ordersRepo from '../repositories/orders.js';
 import { restoreOrderStock } from '../repositories/inventory.js';
 import { getPaymentProvider } from './providers/payment.js';
-import { notifyUser } from './notificationService.js';
+import { notifyOrderRecipient } from './notificationService.js';
 import { recordAudit } from '../repositories/audit.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/http.js';
 
@@ -121,11 +121,9 @@ function applyMomoResult(payment, status) {
     status === 'success'
       ? `Payment of GHS ${payment.amount.toFixed(2)} for order ${order.reference} was received. Thank you.`
       : `Payment for order ${order.reference} failed. The order was cancelled and stock released. Please try again.`;
-  if (order.customer_id) {
-    notifyUser(order.customer_id, status === 'success' ? 'payment_received' : 'payment_failed', message, {
-      orderId: order.id,
-    }).catch(() => {});
-  }
+  notifyOrderRecipient(order, status === 'success' ? 'payment_received' : 'payment_failed', message, {
+    orderId: order.id,
+  }).catch(() => {});
   return updated;
 }
 

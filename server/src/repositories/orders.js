@@ -3,10 +3,12 @@ import { getDb } from '../db/index.js';
 export function createOrder(data) {
   const info = getDb()
     .prepare(
-      `INSERT INTO orders (reference, customer_id, pharmacy_id, channel, fulfilment, delivery_zone_id,
+      `INSERT INTO orders (reference, customer_id, guest_name, guest_phone, guest_email, consent_given_at,
+        pharmacy_id, channel, fulfilment, delivery_zone_id,
         delivery_fee, delivery_address, digital_address_code, status, payment_status, subtotal, total,
         notes, created_by)
-       VALUES (@reference, @customerId, @pharmacyId, @channel, @fulfilment, @deliveryZoneId,
+       VALUES (@reference, @customerId, @guestName, @guestPhone, @guestEmail, @consentGivenAt,
+        @pharmacyId, @channel, @fulfilment, @deliveryZoneId,
         @deliveryFee, @deliveryAddress, @digitalAddressCode, @status, @paymentStatus, @subtotal, @total,
         @notes, @createdBy)`
     )
@@ -138,7 +140,8 @@ export function detail(orderId) {
     .prepare(
       `SELECT o.*, p.name AS pharmacy_name, p.community AS pharmacy_community, p.phone AS pharmacy_phone,
               p.address AS pharmacy_address, p.landmark AS pharmacy_landmark,
-              u.full_name AS customer_name, u.phone AS customer_phone,
+              u.full_name AS customer_name, u.phone AS customer_phone, u.email AS customer_email,
+              CASE WHEN o.guest_name IS NOT NULL THEN 1 ELSE 0 END AS is_guest,
               z.name AS delivery_zone_name,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count
          FROM orders o
@@ -151,6 +154,9 @@ export function detail(orderId) {
   if (!order) return null;
   return {
     ...order,
+    customer_name: order.customer_name || order.guest_name || null,
+    customer_phone: order.customer_phone || order.guest_phone || null,
+    customer_email: order.customer_email || order.guest_email || null,
     items: items(orderId),
     payments: payments(orderId),
     prescriptions: prescriptions(orderId),
@@ -192,7 +198,9 @@ export function list(query, scope) {
     params.to = query.to;
   }
   if (query.q) {
-    where.push('(o.reference LIKE @q OR u.full_name LIKE @q OR u.phone LIKE @q)');
+    where.push(
+      '(o.reference LIKE @q OR u.full_name LIKE @q OR u.phone LIKE @q OR o.guest_name LIKE @q OR o.guest_phone LIKE @q)'
+    );
     params.q = `%${query.q}%`;
   }
   const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -204,7 +212,9 @@ export function list(query, scope) {
   const items = db
     .prepare(
       `SELECT o.*, p.name AS pharmacy_name, p.community AS pharmacy_community,
-              u.full_name AS customer_name, u.phone AS customer_phone,
+              COALESCE(u.full_name, o.guest_name) AS customer_name,
+              COALESCE(u.phone, o.guest_phone) AS customer_phone,
+              CASE WHEN o.guest_name IS NOT NULL THEN 1 ELSE 0 END AS is_guest,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
               (SELECT COUNT(*) FROM prescriptions pr WHERE pr.order_id = o.id AND pr.status IN ('pending','queried')) AS pending_prescriptions,
               d.rider_id, r.full_name AS rider_name, d.status AS delivery_status

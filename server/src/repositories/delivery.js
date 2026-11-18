@@ -70,6 +70,7 @@ export function riderDeliveries(riderId, status) {
               o.delivery_address, o.digital_address_code, o.total, o.customer_id,
               p.name AS pharmacy_name, p.phone AS pharmacy_phone, p.landmark AS pharmacy_landmark,
               u.full_name AS customer_name, u.phone AS customer_phone,
+              o.guest_name, o.guest_phone,
               z.name AS zone_name
          FROM deliveries d
          JOIN orders o ON o.id = d.order_id
@@ -79,7 +80,12 @@ export function riderDeliveries(riderId, status) {
         WHERE ${where.join(' AND ')}
         ORDER BY o.created_at DESC`
     )
-    .all({ riderId, status });
+    .all({ riderId, status })
+    .map((row) => ({
+      ...row,
+      customer_name: row.customer_name || row.guest_name || null,
+      customer_phone: row.customer_phone || row.guest_phone || null,
+    }));
 }
 
 export function riders(pharmacyId) {
@@ -96,6 +102,7 @@ export function deliveryQueue(pharmacyId) {
     .prepare(
       `SELECT d.*, o.reference, o.status AS order_status, o.delivery_address, o.digital_address_code,
               o.total, o.customer_id, u.full_name AS customer_name, u.phone AS customer_phone,
+              o.guest_name, o.guest_phone,
               z.name AS zone_name, r.full_name AS rider_name
          FROM deliveries d
          JOIN orders o ON o.id = d.order_id
@@ -104,5 +111,10 @@ export function deliveryQueue(pharmacyId) {
          LEFT JOIN delivery_zones z ON z.id = o.delivery_zone_id
         WHERE o.pharmacy_id = ? ORDER BY o.created_at DESC LIMIT 200`
     )
-    .all(pharmacyId);
+    .all(pharmacyId)
+    .map((row) => ({
+      ...row,
+      customer_name: row.customer_name || row.guest_name || null,
+      customer_phone: row.customer_phone || row.guest_phone || null,
+    }));
 }

@@ -52,6 +52,40 @@ export async function sendEmail(to, subject, body, meta = {}) {
   return getEmailProvider().send(to, subject, body, meta);
 }
 
+/**
+ * Sends to contact details that are not tied to an account (guest checkout).
+ * Guest prescriptions and order updates still reach the phone number supplied
+ * with the order. Failures are logged, never rolled back.
+ */
+export async function notifyContact({ phone, email } = {}, event, message, { orderId = null } = {}) {
+  if (phone) {
+    try {
+      await getSmsProvider().send(phone, message, { orderId, event });
+    } catch (err) {
+      console.error('[notification:sms]', err.message);
+    }
+  }
+  if (email) {
+    try {
+      await getEmailProvider().send(email, `PharmaLink: ${event.replace(/_/g, ' ')}`, message, { orderId, event });
+    } catch (err) {
+      console.error('[notification:email]', err.message);
+    }
+  }
+}
+
+/** Picks the account owner or the guest contact stored on the order. */
+export async function notifyOrderRecipient(order, event, message, options = {}) {
+  if (!order) return;
+  if (order.customer_id) return notifyUser(order.customer_id, event, message, options);
+  return notifyContact(
+    { phone: order.guest_phone || null, email: order.guest_email || null },
+    event,
+    message,
+    options
+  );
+}
+
 export function listNotifications(userId, { pageSize = 50, offset = 0 } = {}) {
   return getDb()
     .prepare(

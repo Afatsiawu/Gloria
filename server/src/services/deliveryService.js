@@ -5,7 +5,7 @@ import * as catalogueRepo from '../repositories/catalogue.js';
 import { recordAudit } from '../repositories/audit.js';
 import { resolvePharmacy } from '../utils/access.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/http.js';
-import { notifyUser } from './notificationService.js';
+import { notifyUser, notifyOrderRecipient } from './notificationService.js';
 import { immediateTransaction } from '../db/index.js';
 
 export function publicZones(pharmacyId) {
@@ -72,9 +72,9 @@ export function assignRider(user, orderId, riderId) {
   ordersRepo.addEvent(orderId, order.status, `Rider ${rider.full_name} assigned`, user.id);
   recordAudit({ userId: user.id, action: 'rider_assigned', entity: 'order', entityId: orderId, after: { rider_id: riderId } });
   notifyUser(riderId, 'delivery_assigned', `You have been assigned delivery ${order.reference}.`, { orderId }).catch(() => {});
-  if (order.customer_id) {
-    notifyUser(order.customer_id, 'rider_assigned', `A rider has been assigned to order ${order.reference}.`, { orderId }).catch(() => {});
-  }
+  notifyOrderRecipient(order, 'rider_assigned', `A rider has been assigned to order ${order.reference}.`, {
+    orderId,
+  }).catch(() => {});
   return delivery;
 }
 
@@ -128,6 +128,6 @@ export function riderUpdate(user, orderId, input) {
     delivered: `Your order ${order.reference} has been delivered. Thank you.`,
     failed: `The rider could not complete delivery of ${order.reference}. The pharmacy will contact you.`,
   };
-  if (order.customer_id) notifyUser(order.customer_id, `delivery_${input.status}`, messages[input.status], { orderId }).catch(() => {});
+  notifyOrderRecipient(order, `delivery_${input.status}`, messages[input.status], { orderId }).catch(() => {});
   return { delivery: deliveryRepo.getDelivery(orderId), order: ordersRepo.findRaw(orderId) };
 }

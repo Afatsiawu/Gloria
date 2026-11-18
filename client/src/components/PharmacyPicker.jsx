@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useFetch } from '../hooks/useApi.js';
-import { Field } from './UI.jsx';
+import { Field, Select } from './UI.jsx';
 
 const STORAGE_KEY = 'staff_pharmacy_id';
 
@@ -25,15 +25,15 @@ export default function PharmacyPicker({ pharmacyId, onChange, includeAll = fals
   const { data } = useFetch('/pharmacies');
   const pharmacies = data?.items || [];
   return (
-    <Field label="Pharmacy" htmlFor="pharmacy-picker">
-      <select id="pharmacy-picker" value={pharmacyId} onChange={(e) => onChange(Number(e.target.value))}>
+    <Field label="Pharmacy" htmlFor="pharmacy-picker" className="pharmacy-picker">
+      <Select id="pharmacy-picker" value={pharmacyId} onChange={(event) => onChange(Number(event.target.value))}>
         {includeAll && <option value="">All pharmacies</option>}
         {pharmacies.map((pharmacy) => (
           <option key={pharmacy.id} value={pharmacy.id}>
             {pharmacy.name} ({pharmacy.community})
           </option>
         ))}
-      </select>
+      </Select>
     </Field>
   );
 }
@@ -42,7 +42,6 @@ export function PharmacyBar({ pharmacyId, onChange, includeAll = false }) {
   return (
     <div className="pharmacy-bar">
       <PharmacyPicker pharmacyId={pharmacyId} onChange={onChange} includeAll={includeAll} />
-      <p className="hint">Administrator view: choose which outlet to manage.</p>
     </div>
   );
 }

@@ -15,13 +15,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          charts: ['chart.js', 'react-chartjs-2'],
-        },
-      },
-    },
   },
   test: {
     environment: 'jsdom',

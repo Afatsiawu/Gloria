@@ -4,16 +4,32 @@ import * as controller from '../controllers/orderController.js';
 import { receipt } from '../controllers/reportsController.js';
 import { validate } from '../utils/validate.js';
 import { authenticate, requireRole } from '../middleware/auth.js';
+import { trackLimiter } from '../middleware/rateLimit.js';
 import { paginationSchema, idParam } from './schemas.js';
 
 const router = Router();
-router.use(authenticate);
 
 const digitalAddress = z
   .string()
   .trim()
   .regex(/^[A-Za-z]{2}-\d{3}-\d{4}$/, 'Use a Ghana Post GPS code such as GA-123-4567')
   .optional();
+
+// Public: guests prove ownership with reference + phone. Mounted before the
+// authenticated routes below. Both values must match (generic 404 otherwise).
+router.post(
+  '/track',
+  trackLimiter,
+  validate({
+    body: z.object({
+      reference: z.string().trim().min(4).max(40),
+      phone: z.string().trim().min(7).max(20),
+    }),
+  }),
+  controller.track
+);
+
+router.use(authenticate);
 
 const placeSchema = z.object({
   fulfilment: z.enum(['pickup', 'delivery']),

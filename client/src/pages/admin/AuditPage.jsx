@@ -1,7 +1,26 @@
 import { useState } from 'react';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
-import { Badge, EmptyState, ErrorState, Field, PageHeader, Pagination, RawJson, Skeleton } from '../../components/UI.jsx';
+import {
+  DataTable,
+  EmptyState,
+  ErrorState,
+  Field,
+  PageTitle,
+  Pagination,
+} from '../../components/UI.jsx';
 import { formatDateTime, titleCase } from '../../utils/format.js';
+
+function Payload({ value }) {
+  if (!value) return <span className="muted">—</span>;
+  let text = value;
+  try {
+    const parsed = typeof value === 'string' ? JSON.parse(value) : value;
+    text = JSON.stringify(parsed, null, 2);
+  } catch {
+    text = String(value);
+  }
+  return <pre className="json">{text}</pre>;
+}
 
 export default function AuditPage() {
   usePageTitle('Audit log');
@@ -18,28 +37,19 @@ export default function AuditPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Accountability"
-        title="Audit log"
-        subtitle="Every significant action is recorded with the actor, entity, before/after values and IP address. Records are append-only."
-        actions={<button type="button" className="btn btn-ghost btn-sm" onClick={reload}>Refresh</button>}
-      />
+      <PageTitle title="Audit log" subtitle="Append-only record of actions taken in the system." />
 
-      <div className="card mb-2">
-        <div className="card-body">
-          <form className="form-grid" onSubmit={(event) => event.preventDefault()}>
-            <Field label="Action contains" htmlFor="audit-action">
-              <input id="audit-action" value={action} onChange={(event) => { setAction(event.target.value); setPage(1); }} placeholder="e.g. order_placed, price_changed" />
-            </Field>
-            <Field label="Entity" htmlFor="audit-entity">
-              <input id="audit-entity" value={entity} onChange={(event) => { setEntity(event.target.value); setPage(1); }} placeholder="e.g. order, batch, user" />
-            </Field>
-          </form>
-        </div>
+      <div className="toolbar">
+        <Field label="Action" htmlFor="audit-action" className="inline-field">
+          <input id="audit-action" value={action} onChange={(event) => { setAction(event.target.value); setPage(1); }} placeholder="For example order_placed" />
+        </Field>
+        <Field label="Entity" htmlFor="audit-entity" className="inline-field">
+          <input id="audit-entity" value={entity} onChange={(event) => { setEntity(event.target.value); setPage(1); }} placeholder="For example order" />
+        </Field>
       </div>
 
       {error && <ErrorState error={error} retry={reload} />}
-      {loading && <Skeleton lines={8} />}
+      {loading && <p className="loading">Loading…</p>}
 
       {!loading && !error && items.length === 0 && (
         <EmptyState title="No audit entries match">Try a shorter action or entity filter.</EmptyState>
@@ -47,38 +57,40 @@ export default function AuditPage() {
 
       {!loading && items.length > 0 && (
         <>
-          <div className="stack">
-            {items.map((entry) => (
-              <article className="card" key={entry.id}>
-                <div className="card-body">
-                  <div className="row between">
-                    <div>
-                      <div className="row">
-                        <Badge tone="info">{titleCase(entry.action)}</Badge>
-                        <Badge tone="neutral">{entry.entity}{entry.entity_id ? ` #${entry.entity_id}` : ''}</Badge>
-                        {entry.user_role && <Badge tone="teal">{entry.user_role}</Badge>}
+          <DataTable
+            columns={[
+              { key: 'created_at', label: 'Time', render: (entry) => formatDateTime(entry.created_at) },
+              { key: 'action', label: 'Action', render: (entry) => titleCase(entry.action) },
+              { key: 'entity', label: 'Entity', render: (entry) => `${entry.entity}${entry.entity_id ? ` #${entry.entity_id}` : ''}` },
+              {
+                key: 'user_name',
+                label: 'User',
+                render: (entry) => <>{entry.user_name || 'System'} <span className="tiny muted">{entry.user_role}</span></>,
+              },
+              {
+                key: 'details',
+                label: 'Details',
+                render: (entry) => (
+                  <details className="details-block">
+                    <summary>Before and after</summary>
+                    <div className="stack-sm">
+                      <div>
+                        <strong className="small">Before</strong>
+                        <Payload value={entry.before_json} />
                       </div>
-                      <p className="small mb-0 mt-1">
-                        <strong>{entry.user_name || 'System'}</strong> · {formatDateTime(entry.created_at)}
-                        {entry.ip ? ` · ${entry.ip}` : ''}
-                      </p>
+                      <div>
+                        <strong className="small">After</strong>
+                        <Payload value={entry.after_json} />
+                      </div>
+                      {entry.ip && <span className="tiny muted">{entry.ip}</span>}
                     </div>
-                  </div>
-                  <div className="grid grid-2 mt-2">
-                    <RawJson label="Before" value={entry.before_json} />
-                    <RawJson label="After" value={entry.after_json} />
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-          <Pagination
-            pagination={{
-              page: data.pagination.page,
-              totalPages: data.pagination.totalPages,
-            }}
-            onPage={setPage}
+                  </details>
+                ),
+              },
+            ]}
+            rows={items}
           />
+          <Pagination pagination={data.pagination} onPage={setPage} />
         </>
       )}
     </>

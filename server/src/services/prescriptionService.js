@@ -5,8 +5,11 @@ import { getDb, immediateTransaction } from '../db/index.js';
 import { config } from '../config.js';
 import * as ordersRepo from '../repositories/orders.js';
 import { recordAudit } from '../repositories/audit.js';
-import { notifyUser } from './notificationService.js';
+import { notifyUser, notifyOrderRecipient } from './notificationService.js';
 import { badRequest, conflict, forbidden, notFound } from '../utils/http.js';
+import { normalisePhone } from '../utils/phone.js';
+
+const TRACK_ERROR = 'We could not find an order with that reference and phone number.';
 
 async function optimiseImage(file) {
   if (!file.mimetype.startsWith('image/')) return { stored: file.filename, mime: file.mimetype };
@@ -18,18 +21,16 @@ async function optimiseImage(file) {
   return { stored: targetName, mime: 'image/webp' };
 }
 
-export async function uploadForOrder(orderId, user, file) {
-  if (!file) throw badRequest('Choose a prescription file to upload.');
-  const order = ordersRepo.findRaw(orderId);
-  if (!order) throw notFound('Order not found.');
-  if (order.customer_id !== user.id) throw forbidden();
+function assertCanReceive(order) {
   if (['cancelled', 'completed'].includes(order.status)) throw conflict('This order can no longer receive a prescription.');
-  if (!ordersRepo.hasPomItems(orderId)) throw badRequest('This order does not contain prescription-only medicines.');
+  if (!ordersRepo.hasPomItems(order.id)) throw badRequest('This order does not contain prescription-only medicines.');
   const pending = getDb()
     .prepare("SELECT id FROM prescriptions WHERE order_id = ? AND status IN ('pending','approved')")
-    .get(orderId);
+    .get(order.id);
   if (pending) throw conflict('A prescription for this order is already waiting or approved.');
+}
 
+async function storePrescription(order, { customerId, actorId, file, ip }) {
   let stored;
   try {
     stored = await optimiseImage(file);
@@ -44,30 +45,45 @@ export async function uploadForOrder(orderId, user, file) {
         `INSERT INTO prescriptions (order_id, customer_id, file_path, original_name, mime_type, status)
          VALUES (?, ?, ?, ?, ?, 'pending')`
       )
-      .run(orderId, user.id, stored.stored, file.originalname?.slice(0, 255) || null, stored.mime);
+      .run(order.id, customerId, stored.stored, file.originalname?.slice(0, 255) || null, stored.mime);
     if (order.status !== 'awaiting_prescription') {
-      ordersRepo.updateStatus(orderId, 'awaiting_prescription');
+      ordersRepo.updateStatus(order.id, 'awaiting_prescription');
     }
-    ordersRepo.addEvent(orderId, 'awaiting_prescription', 'Prescription uploaded; waiting for pharmacist review', user.id);
+    ordersRepo.addEvent(
+      order.id,
+      'awaiting_prescription',
+      'Prescription uploaded; waiting for pharmacist review',
+      actorId
+    );
     recordAudit({
-      userId: user.id,
+      userId: actorId,
       action: 'prescription_uploaded',
       entity: 'prescription',
       entityId: info.lastInsertRowid,
-      after: { order_id: orderId },
+      after: { order_id: order.id, guest: customerId == null },
+      ip,
     });
     return getDb().prepare('SELECT * FROM prescriptions WHERE id = ?').get(info.lastInsertRowid);
   });
 
-  notifyUser(user.id, 'prescription_uploaded', 'Your prescription was uploaded and is waiting for pharmacist review.', {
-    orderId,
-  }).catch(() => {});
+  if (customerId != null) {
+    notifyUser(customerId, 'prescription_uploaded', 'Your prescription was uploaded and is waiting for pharmacist review.', {
+      orderId: order.id,
+    }).catch(() => {});
+  } else {
+    notifyOrderRecipient(
+      order,
+      'prescription_uploaded',
+      'Your prescription was uploaded and is waiting for pharmacist review.',
+      { orderId: order.id }
+    ).catch(() => {});
+  }
   const pharmacists = getDb()
     .prepare("SELECT id FROM users WHERE role = 'pharmacist' AND pharmacy_id = ? AND is_active = 1")
     .all(order.pharmacy_id);
   for (const pharmacist of pharmacists) {
     notifyUser(pharmacist.id, 'prescription_pending', `A prescription is waiting for review for order ${order.reference}.`, {
-      orderId,
+      orderId: order.id,
     }).catch(() => {});
   }
   return {
@@ -78,6 +94,32 @@ export async function uploadForOrder(orderId, user, file) {
     mime_type: prescription.mime_type,
     created_at: prescription.created_at,
   };
+}
+
+export async function uploadForOrder(orderId, user, file, ip = null) {
+  if (!file) throw badRequest('Choose a prescription file to upload.');
+  const order = ordersRepo.findRaw(orderId);
+  if (!order) throw notFound('Order not found.');
+  if (order.customer_id !== user.id) throw forbidden();
+  assertCanReceive(order);
+  return storePrescription(order, { customerId: user.id, actorId: user.id, file, ip });
+}
+
+/** Guest upload: reference + phone must both match the order. */
+export async function uploadForGuest(orderId, { reference, phone }, file, ip = null) {
+  if (!file) throw badRequest('Choose a prescription file to upload.');
+  const order = ordersRepo.findRaw(orderId);
+  if (
+    !order ||
+    !order.guest_phone ||
+    order.reference !== String(reference || '').trim().toUpperCase() ||
+    order.guest_phone !== normalisePhone(phone)
+  ) {
+    if (file.filename) fs.rmSync(path.join(config.prescriptionsDir, file.filename), { force: true });
+    throw notFound(TRACK_ERROR);
+  }
+  assertCanReceive(order);
+  return storePrescription(order, { customerId: null, actorId: null, file, ip });
 }
 
 export function queue(user, query) {
@@ -102,7 +144,9 @@ export function queue(user, query) {
     .prepare(
       `SELECT p.id, p.order_id, p.status, p.original_name, p.mime_type, p.created_at, p.remarks,
               p.reviewed_at, o.reference, o.total, o.status AS order_status, o.pharmacy_id,
-              ph.name AS pharmacy_name, u.full_name AS customer_name, u.phone AS customer_phone,
+              ph.name AS pharmacy_name, COALESCE(u.full_name, o.guest_name) AS customer_name,
+              COALESCE(u.phone, o.guest_phone) AS customer_phone,
+              CASE WHEN o.guest_name IS NOT NULL THEN 1 ELSE 0 END AS is_guest,
               (SELECT GROUP_CONCAT(m.brand_name, ', ') FROM order_items oi
                  JOIN medicines m ON m.id = oi.medicine_id
                 WHERE oi.order_id = o.id AND m.requires_prescription = 1) AS pom_items
@@ -165,9 +209,7 @@ export function review(prescriptionId, user, { status, remarks }) {
     rejected: `Your prescription for order ${order.reference} was rejected. Remarks: ${remarks}`,
     queried: `The pharmacist needs clarification on your prescription for order ${order.reference}. Remarks: ${remarks}`,
   };
-  if (order.customer_id) {
-    notifyUser(order.customer_id, `prescription_${status}`, messages[status], { orderId: order.id }).catch(() => {});
-  }
+  notifyOrderRecipient(order, `prescription_${status}`, messages[status], { orderId: order.id }).catch(() => {});
   return updated;
 }
 

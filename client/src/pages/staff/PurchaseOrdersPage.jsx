@@ -3,17 +3,7 @@ import { api } from '../../api/client.js';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
 import { useStaffPharmacy } from '../../components/PharmacyPicker.jsx';
 import PharmacyPicker from '../../components/PharmacyPicker.jsx';
-import {
-  Alert,
-  Badge,
-  EmptyState,
-  ErrorState,
-  Field,
-  Modal,
-  PageHeader,
-  Skeleton,
-  statusText,
-} from '../../components/UI.jsx';
+import { DataTable, ErrorState, Field, Loading, Modal, statusText } from '../../components/UI.jsx';
 import { formatDate, formatMoney } from '../../utils/format.js';
 
 const DAY = 86400000;
@@ -28,11 +18,11 @@ export default function PurchaseOrdersPage() {
   const [creating, setCreating] = useState(false);
   const [lines, setLines] = useState([emptyLine()]);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState(null);
-  const [error, setError] = useState(null);
+  const [notice, setNotice] = useState('');
+  const [error, setError] = useState('');
 
   const query = `${isAdmin ? `?pharmacyId=${pharmacyId}${status ? `&status=${status}` : ''}` : status ? `?status=${status}` : ''}`;
-  const list = useFetch(`/purchase-orders${query}`);
+  const list = useFetch(`/purchase-orders${query}`, [pharmacyId, status]);
   const suppliers = useFetch(`/suppliers${isAdmin ? `?pharmacyId=${pharmacyId}` : ''}`);
   const medicines = useFetch('/medicines?pageSize=100');
   const detail = useFetch(selectedId ? `/purchase-orders/${selectedId}` : null);
@@ -44,15 +34,15 @@ export default function PurchaseOrdersPage() {
 
   const run = async (fn, message) => {
     setBusy(true);
-    setNotice(null);
-    setError(null);
+    setNotice('');
+    setError('');
     try {
       await fn();
       setNotice(message);
       reload();
       return true;
     } catch (err) {
-      setError(err);
+      setError(err.message || 'Could not save.');
       return false;
     } finally {
       setBusy(false);
@@ -63,22 +53,23 @@ export default function PurchaseOrdersPage() {
     event.preventDefault();
     const valid = lines.filter((line) => line.medicineId && Number(line.quantityOrdered) > 0);
     if (!valid.length) {
-      setError(new Error('Add at least one medicine line.'));
+      setError('Add at least one medicine line.');
       return;
     }
     const ok = await run(
-      () => api('/purchase-orders', {
-        method: 'POST',
-        body: {
-          pharmacyId: isAdmin ? pharmacyId : undefined,
-          supplierId: Number(event.target.supplierId.value),
-          items: valid.map((line) => ({
-            medicineId: Number(line.medicineId),
-            quantityOrdered: Number(line.quantityOrdered),
-            unitCost: Number(line.unitCost) || 0,
-          })),
-        },
-      }),
+      () =>
+        api('/purchase-orders', {
+          method: 'POST',
+          body: {
+            pharmacyId: isAdmin ? pharmacyId : undefined,
+            supplierId: Number(event.target.supplierId.value),
+            items: valid.map((line) => ({
+              medicineId: Number(line.medicineId),
+              quantityOrdered: Number(line.quantityOrdered),
+              unitCost: Number(line.unitCost) || 0,
+            })),
+          },
+        }),
       'Draft purchase order created.'
     );
     if (ok) {
@@ -107,12 +98,12 @@ export default function PurchaseOrdersPage() {
       })
       .filter(Boolean);
     if (!items.length) {
-      setError(new Error('Enter a quantity for at least one line.'));
+      setError('Enter a quantity for at least one line.');
       return;
     }
     run(
       () => api(`/purchase-orders/${po.id}/receive`, { method: 'POST', body: { items } }),
-      'Goods received. New batches are now available for sale.'
+      'Goods received.'
     );
   };
 
@@ -121,191 +112,282 @@ export default function PurchaseOrdersPage() {
 
   return (
     <>
-      <PageHeader
-        eyebrow="Procurement"
-        title="Purchase orders"
-        subtitle="Raise orders with suppliers, mark them ordered and receive goods into tracked batches with expiry dates."
-        actions={
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => { setError(null); setCreating(true); }}>
+      <div className="page-title">
+        <div>
+          <h1>Purchase orders</h1>
+        </div>
+        <div className="page-actions">
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setError('');
+              setCreating(true);
+            }}
+          >
             New purchase order
           </button>
-        }
-      />
+        </div>
+      </div>
 
       {isAdmin && <PharmacyPicker pharmacyId={pharmacyId} onChange={setPharmacyId} />}
-      {notice && <Alert tone="success">{notice}</Alert>}
-      {error && !selectedId && !creating && <Alert tone="error">{error.message}</Alert>}
+      {notice && !selectedId && !creating && <p className="success-text">{notice}</p>}
+      {error && !selectedId && !creating && <p className="error-text">{error}</p>}
 
-      <div className="chips mb-2">
-        {[['', 'All'], ['draft', 'Draft'], ['ordered', 'Ordered'], ['received', 'Received'], ['cancelled', 'Cancelled']].map(([value, label]) => (
-          <button key={value || 'all'} type="button" className={`chip ${status === value ? 'active' : ''}`} onClick={() => setStatus(value)}>
-            {label}
-          </button>
-        ))}
+      <div className="toolbar">
+        <select aria-label="Filter by status" value={status} onChange={(event) => setStatus(event.target.value)}>
+          <option value="">All</option>
+          <option value="draft">Draft</option>
+          <option value="ordered">Ordered</option>
+          <option value="received">Received</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
       </div>
 
       {list.error && <ErrorState error={list.error} retry={list.reload} />}
-      {list.loading && <Skeleton lines={6} />}
+      {list.loading && <Loading />}
 
-      {!list.loading && !list.error && items.length === 0 && (
-        <EmptyState title="No purchase orders yet" action={<button type="button" className="btn btn-primary" onClick={() => setCreating(true)}>Raise your first order</button>}>
-          Purchase orders help you restock low items and record supplier batches.
-        </EmptyState>
+      {!list.loading && !list.error && (
+        <DataTable
+          rows={items}
+          empty="No purchase orders yet."
+          columns={[
+            {
+              key: 'id',
+              label: 'PO',
+              render: (order) => <strong>PO-{String(order.id).padStart(4, '0')}</strong>,
+            },
+            { key: 'supplier_name', label: 'Supplier' },
+            { key: 'status', label: 'Status', render: (order) => statusText(order.status) },
+            { key: 'order_value', label: 'Value', align: 'right', render: (order) => formatMoney(order.order_value) },
+            { key: 'created_at', label: 'Created', render: (order) => formatDate(order.created_at) },
+            {
+              key: 'actions',
+              label: '',
+              render: (order) => (
+                <button
+                  type="button"
+                  className="btn btn-secondary btn-sm"
+                  onClick={() => {
+                    setError('');
+                    setSelectedId(order.id);
+                  }}
+                >
+                  Open
+                </button>
+              ),
+            },
+          ]}
+        />
       )}
 
-      {!list.loading && items.length > 0 && (
-        <div className="table-wrap card">
-          <table>
-            <thead>
-              <tr>
-                <th>PO</th>
-                <th>Supplier</th>
-                <th>Status</th>
-                <th className="text-right">Lines</th>
-                <th className="text-right">Value</th>
-                <th>Created</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((order) => (
-                <tr key={order.id}>
-                  <td><strong>PO-{String(order.id).padStart(4, '0')}</strong></td>
-                  <td>{order.supplier_name}</td>
-                  <td><Badge tone={order.status === 'received' ? 'success' : order.status === 'cancelled' ? 'danger' : order.status === 'ordered' ? 'info' : 'neutral'}>{statusText(order.status)}</Badge></td>
-                  <td className="text-right">{order.item_count}</td>
-                  <td className="text-right">{formatMoney(order.order_value)}</td>
-                  <td className="small muted">{formatDate(order.created_at)}</td>
-                  <td>
-                    <button type="button" className="btn btn-secondary btn-sm" onClick={() => { setError(null); setSelectedId(order.id); }}>
-                      Open
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      <Modal open={creating} onClose={() => setCreating(false)} title="New purchase order" wide
+      <Modal
+        open={creating}
+        onClose={() => setCreating(false)}
+        title="New purchase order"
+        wide
         footer={
-          <div className="row">
-            <button type="button" className="btn btn-ghost" onClick={() => setCreating(false)}>Cancel</button>
-            <button type="submit" form="po-create-form" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Create draft'}</button>
+          <div className="detail-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setCreating(false)}>
+              Cancel
+            </button>
+            <button type="submit" form="po-create-form" className="btn btn-primary" disabled={busy}>
+              {busy ? 'Please wait…' : 'Create draft'}
+            </button>
           </div>
         }
       >
-        <form id="po-create-form" onSubmit={create} className="stack">
-          {error && <Alert tone="error">{error.message}</Alert>}
+        <form id="po-create-form" onSubmit={create}>
+          {error && <p className="error-text">{error}</p>}
           <Field label="Supplier" htmlFor="po-supplier" required>
             <select id="po-supplier" name="supplierId" required>
               <option value="">Choose a supplier</option>
               {(suppliers.data?.items || []).map((supplier) => (
-                <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
               ))}
             </select>
           </Field>
-          <div className="walkin-lines">
-            {lines.map((line, index) => (
-              <div className="walkin-line" key={index}>
-                <div className="field full">
-                  <label htmlFor={`po-medicine-${index}`}>Medicine</label>
-                  <select id={`po-medicine-${index}`} value={line.medicineId} onChange={(event) => updateLine(index, 'medicineId', event.target.value)}>
-                    <option value="">Choose a medicine</option>
-                    {(medicines.data?.items || []).map((medicine) => (
-                      <option key={medicine.id} value={medicine.id}>{medicine.brand_name}{medicine.strength ? ` ${medicine.strength}` : ''}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor={`po-qty-${index}`}>Quantity</label>
-                  <input id={`po-qty-${index}`} type="number" min="1" value={line.quantityOrdered} onChange={(event) => updateLine(index, 'quantityOrdered', event.target.value)} />
-                </div>
-                <div className="field">
-                  <label htmlFor={`po-cost-${index}`}>Unit cost (GHS)</label>
-                  <input id={`po-cost-${index}`} type="number" min="0" step="0.01" value={line.unitCost} onChange={(event) => updateLine(index, 'unitCost', event.target.value)} />
-                </div>
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => setLines((current) => current.filter((_, i) => i !== index))} disabled={lines.length === 1}>Remove</button>
-              </div>
-            ))}
-          </div>
-          <button type="button" className="btn btn-secondary btn-sm" onClick={() => setLines((current) => [...current, emptyLine()])}>Add another line</button>
+          {lines.map((line, index) => (
+            <div className="walkin-line" key={index}>
+              <Field label="Medicine" htmlFor={`po-medicine-${index}`}>
+                <select
+                  id={`po-medicine-${index}`}
+                  value={line.medicineId}
+                  onChange={(event) => updateLine(index, 'medicineId', event.target.value)}
+                >
+                  <option value="">Choose a medicine</option>
+                  {(medicines.data?.items || []).map((medicine) => (
+                    <option key={medicine.id} value={medicine.id}>
+                      {medicine.brand_name}
+                      {medicine.strength ? ` ${medicine.strength}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Quantity" htmlFor={`po-qty-${index}`}>
+                <input
+                  id={`po-qty-${index}`}
+                  type="number"
+                  min="1"
+                  inputMode="numeric"
+                  value={line.quantityOrdered}
+                  onChange={(event) => updateLine(index, 'quantityOrdered', event.target.value)}
+                />
+              </Field>
+              <Field label="Unit cost (GHS)" htmlFor={`po-cost-${index}`}>
+                <input
+                  id={`po-cost-${index}`}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={line.unitCost}
+                  onChange={(event) => updateLine(index, 'unitCost', event.target.value)}
+                />
+              </Field>
+              <button
+                type="button"
+                className="link"
+                onClick={() => setLines((current) => current.filter((_, i) => i !== index))}
+                disabled={lines.length === 1}
+              >
+                Remove line
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setLines((current) => [...current, emptyLine()])}
+          >
+            Add line
+          </button>
         </form>
       </Modal>
 
-      <Modal open={Boolean(selectedId)} onClose={() => setSelectedId(null)} title={po ? `PO-${String(po.id).padStart(4, '0')}` : 'Purchase order'} wide
-        footer={<button type="button" className="btn btn-ghost" onClick={() => setSelectedId(null)}>Close</button>}
+      <Modal
+        open={Boolean(selectedId)}
+        onClose={() => setSelectedId(null)}
+        title={po ? `PO-${String(po.id).padStart(4, '0')}` : 'Purchase order'}
+        wide
+        footer={
+          <button type="button" className="btn btn-secondary" onClick={() => setSelectedId(null)}>
+            Close
+          </button>
+        }
       >
-        {detail.loading && <Skeleton lines={5} />}
+        {detail.loading && <Loading />}
         {detail.error && <ErrorState error={detail.error} retry={detail.reload} />}
         {po && (
-          <div className="stack">
-            {error && <Alert tone="error">{error.message}</Alert>}
-            <div className="row between">
-              <div>
-                <strong>{po.supplier_name}</strong>
-                <div className="small muted">{po.supplier_phone} {po.supplier_email ? `· ${po.supplier_email}` : ''}</div>
-              </div>
-              <Badge tone={po.status === 'received' ? 'success' : po.status === 'cancelled' ? 'danger' : 'info'}>{statusText(po.status)}</Badge>
-            </div>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr><th>Medicine</th><th className="text-right">Ordered</th><th className="text-right">Received</th><th className="text-right">Outstanding</th><th className="text-right">Unit cost</th></tr>
-                </thead>
-                <tbody>
-                  {po.items.map((item) => (
-                    <tr key={item.id}>
-                      <td>{item.brand_name}{item.strength ? ` ${item.strength}` : ''}</td>
-                      <td className="text-right">{item.quantity_ordered}</td>
-                      <td className="text-right">{item.quantity_received}</td>
-                      <td className="text-right">{item.outstanding}</td>
-                      <td className="text-right">{formatMoney(item.unit_cost)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+          <>
+            {error && <p className="error-text">{error}</p>}
+            <p className="muted">
+              {po.supplier_name} · {statusText(po.status)}
+            </p>
+
+            <DataTable
+              rows={po.items || []}
+              empty="No lines."
+              columns={[
+                {
+                  key: 'brand_name',
+                  label: 'Medicine',
+                  render: (item) => (
+                    <>
+                      {item.brand_name}
+                      {item.strength ? ` ${item.strength}` : ''}
+                    </>
+                  ),
+                },
+                { key: 'quantity_ordered', label: 'Ordered', align: 'right' },
+                { key: 'quantity_received', label: 'Received', align: 'right' },
+                { key: 'outstanding', label: 'Open', align: 'right' },
+                { key: 'unit_cost', label: 'Unit cost', align: 'right', render: (item) => formatMoney(item.unit_cost) },
+              ]}
+            />
 
             {po.status === 'draft' && (
-              <div className="row">
-                <button type="button" className="btn btn-primary" disabled={busy} onClick={() => run(() => api(`/purchase-orders/${po.id}/status`, { method: 'PATCH', body: { status: 'ordered' } }), 'Purchase order marked ordered.')}>
-                  Mark as ordered
+              <div className="detail-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      () =>
+                        api(`/purchase-orders/${po.id}/status`, {
+                          method: 'PATCH',
+                          body: { status: 'ordered' },
+                        }),
+                      'Marked as ordered.'
+                    )
+                  }
+                >
+                  Mark ordered
                 </button>
-                <button type="button" className="btn btn-ghost" disabled={busy} onClick={() => run(() => api(`/purchase-orders/${po.id}/status`, { method: 'PATCH', body: { status: 'cancelled' } }), 'Purchase order cancelled.')}>
-                  Cancel PO
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  disabled={busy}
+                  onClick={() =>
+                    run(
+                      () =>
+                        api(`/purchase-orders/${po.id}/status`, {
+                          method: 'PATCH',
+                          body: { status: 'cancelled' },
+                        }),
+                      'Purchase order cancelled.'
+                    )
+                  }
+                >
+                  Cancel
                 </button>
               </div>
             )}
 
             {po.status === 'ordered' && (
-              <form onSubmit={receive} className="stack">
-                <h3>Receive goods</h3>
-                <p className="small muted">Enter the quantity delivered and a batch number/expiry for each line. Leave blank to receive later.</p>
-                {po.items.filter((item) => item.outstanding > 0).map((item) => (
-                  <div className="walkin-line" key={item.id} data-receive-line data-id={item.id}>
-                    <div className="field full">
-                      <label>{item.brand_name} <span className="small muted">({item.outstanding} outstanding)</span></label>
-                      <input name="batchNo" placeholder="Batch number" required />
+              <form onSubmit={receive}>
+                <h3 className="section-heading">Receive goods</h3>
+                {po.items
+                  .filter((item) => item.outstanding > 0)
+                  .map((item) => (
+                    <div className="walkin-line" key={item.id} data-receive-line data-id={item.id}>
+                      <p className="small">
+                        {item.brand_name} ({item.outstanding} outstanding)
+                      </p>
+                      <Field label="Batch number" htmlFor={`batch-${item.id}`}>
+                        <input id={`batch-${item.id}`} name="batchNo" required />
+                      </Field>
+                      <Field label="Quantity" htmlFor={`qty-${item.id}`}>
+                        <input
+                          id={`qty-${item.id}`}
+                          name="quantity"
+                          type="number"
+                          min="0"
+                          max={item.outstanding}
+                          inputMode="numeric"
+                          defaultValue={item.outstanding}
+                        />
+                      </Field>
+                      <Field label="Expiry" htmlFor={`expiry-${item.id}`}>
+                        <input
+                          id={`expiry-${item.id}`}
+                          name="expiryDate"
+                          type="date"
+                          defaultValue={defaultExpiry()}
+                          required
+                        />
+                      </Field>
                     </div>
-                    <div className="field">
-                      <label>Quantity</label>
-                      <input name="quantity" type="number" min="0" max={item.outstanding} defaultValue={item.outstanding} />
-                    </div>
-                    <div className="field">
-                      <label>Expiry</label>
-                      <input name="expiryDate" type="date" defaultValue={defaultExpiry()} required />
-                    </div>
-                  </div>
-                ))}
-                <button type="submit" className="btn btn-primary" disabled={busy}>{busy ? 'Receiving…' : 'Receive selected goods'}</button>
+                  ))}
+                <button type="submit" className="btn btn-primary" disabled={busy}>
+                  {busy ? 'Please wait…' : 'Receive goods'}
+                </button>
               </form>
             )}
-
-            {po.status === 'received' && <Alert tone="success">This purchase order has been fully received.</Alert>}
-            {po.status === 'cancelled' && <Alert tone="warning">This purchase order was cancelled and cannot receive goods.</Alert>}
-          </div>
+          </>
         )}
       </Modal>
     </>

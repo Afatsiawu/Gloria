@@ -1,0 +1,64 @@
+services:
+  - type: web
+    name: pharmalink-api
+    runtime: node
+    plan: free
+    rootDir: .
+    buildCommand: npm install
+    startCommand: npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CLIENT_ORIGIN
+        sync: false
+      - key: DB_PATH
+        value: /var/data/pharmacy.db
+      - key: UPLOADS_DIR
+        value: /var/data/uploads
+      - key: PRESCRIPTIONS_DIR
+        value: /var/data/uploads/prescriptions
+      - key: BACKUPS_DIR
+        value: /var/data/backups
+      - key: REPORTS_DIR
+        value: /var/data/reports
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: BCRYPT_ROUNDS
+        value: 10
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: PAYMENT_PROVIDER
+        value: mock
+      - key: SMS_PROVIDER
+        value: mock
+      - key: EMAIL_PROVIDER
+        value: mock
+      - key: MOCK_PAYMENT_FAILURE_RATE
+        value: "0"
+      - key: MOCK_PAYMENT_DELAY_MS
+        value: "4000"
+      - key: ENABLE_CRON
+        value: "true"
+      - key: AUTO_SEED
+        value: "true"
+      - key: EXPIRY_ALERT_DAYS
+        value: "90"
+      - key: FORECAST_WINDOW_WEEKS
+        value: "4"
+      - key: FORECAST_LEAD_TIME_DAYS
+        value: "7"
+      - key: SAFETY_STOCK_DAYS
+        value: "3"
+      - key: BACKUP_RETENTION_DAYS
+        value: "14"
+      - key: BACKUP_CRON
+        value: "0 2 * * *"
+    disk:
+      name: pharmalink-data
+      mountPath: /var/data
+      sizeGB: 1

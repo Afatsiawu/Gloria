@@ -6,8 +6,8 @@ import * as deliveryRepo from '../repositories/delivery.js';
 import { allocateFefo, availableStock, restoreOrderStock } from '../repositories/inventory.js';
 import { orderReference } from '../utils/reference.js';
 import { roundMoney, badRequest, conflict, forbidden, notFound } from '../utils/http.js';
-import { normalisePhone, isValidGhanaPhone } from '../utils/phone.js';
-import { notifyUser } from './notificationService.js';
+import { normalisePhone, isValidGhanaPhone, maskPhone } from '../utils/phone.js';
+import { notifyUser, notifyOrderRecipient } from './notificationService.js';
 import { recordAudit } from '../repositories/audit.js';
 import {
   createCashPayment,
@@ -17,6 +17,24 @@ import {
 import { pagination, paged } from '../utils/pagination.js';
 
 const DELIVERY_DIGITAL = /^[A-Za-z]{2}-\d{3}-\d{4}$/;
+const TRACK_ERROR = 'We could not find an order with that reference and phone number.';
+
+function resolveDelivery(pharmacyId, input, fallbackAddress = null, fallbackDigital = null) {
+  if (input.fulfilment !== 'delivery') {
+    return { zoneId: null, deliveryFee: 0, deliveryAddress: null, digitalAddressCode: null };
+  }
+  const zone = deliveryRepo.getZone(input.deliveryZoneId);
+  if (!zone || !zone.is_active || zone.pharmacy_id !== pharmacyId) {
+    throw badRequest('Choose a valid delivery zone for this pharmacy.');
+  }
+  const deliveryAddress = (input.deliveryAddress || fallbackAddress || '').trim();
+  const digitalAddressCode = (input.digitalAddressCode || fallbackDigital || '').trim();
+  if (!deliveryAddress) throw badRequest('A delivery address or landmark is required.');
+  if (!DELIVERY_DIGITAL.test(digitalAddressCode)) {
+    throw badRequest('Enter a valid Ghana Post GPS digital address, for example GA-123-4567.');
+  }
+  return { zoneId: zone.id, deliveryFee: zone.fee, deliveryAddress, digitalAddressCode };
+}
 
 function scopeFor(user, query = {}) {
   if (user.role === 'customer') return { customerId: user.id };
@@ -67,18 +85,8 @@ export async function placeOrder(user, input) {
     let deliveryAddress = null;
     let digitalAddressCode = null;
     if (input.fulfilment === 'delivery') {
-      const zone = deliveryRepo.getZone(input.deliveryZoneId);
-      if (!zone || !zone.is_active || zone.pharmacy_id !== cart.pharmacy.id) {
-        throw badRequest('Choose a valid delivery zone for this pharmacy.');
-      }
-      deliveryAddress = (input.deliveryAddress || user.delivery_address || '').trim();
-      digitalAddressCode = (input.digitalAddressCode || user.digital_address_code || '').trim();
-      if (!deliveryAddress) throw badRequest('A delivery address or landmark is required.');
-      if (!DELIVERY_DIGITAL.test(digitalAddressCode)) {
-        throw badRequest('Enter a valid Ghana Post GPS digital address, for example GA-123-4567.');
-      }
-      zoneId = zone.id;
-      deliveryFee = zone.fee;
+      const delivery = resolveDelivery(cart.pharmacy.id, input, user.delivery_address, user.digital_address_code);
+      ({ zoneId, deliveryFee, deliveryAddress, digitalAddressCode } = delivery);
     }
 
     const items = cart.items.map((item) => {
@@ -104,6 +112,10 @@ export async function placeOrder(user, input) {
     const orderId = ordersRepo.createOrder({
       reference,
       customerId: user.id,
+      guestName: null,
+      guestPhone: null,
+      guestEmail: null,
+      consentGivenAt: null,
       pharmacyId: cart.pharmacy.id,
       channel: 'online',
       fulfilment: input.fulfilment,
@@ -160,6 +172,205 @@ export async function placeOrder(user, input) {
       : `Order ${order.reference} received by ${order.pharmacy_name}. Total GHS ${order.total.toFixed(2)}.`;
   notifyUser(user.id, 'order_confirmation', message, { orderId: order.id }).catch(() => {});
   return order;
+}
+
+/**
+ * Order shape returned to guests. It deliberately omits internal ids, staff
+ * details, audit fields and prescription file paths. The order id is included
+ * so the guest can attach a prescription after a "queried" review.
+ */
+export function publicOrder(order) {
+  if (!order) return null;
+  return {
+    id: order.id,
+    reference: order.reference,
+    status: order.status,
+    payment_status: order.payment_status,
+    fulfilment: order.fulfilment,
+    delivery_address: order.delivery_address,
+    digital_address_code: order.digital_address_code,
+    delivery_fee: order.delivery_fee,
+    subtotal: order.subtotal,
+    total: order.total,
+    notes: order.notes,
+    created_at: order.created_at,
+    updated_at: order.updated_at,
+    delivery_zone_name: order.delivery_zone_name,
+    pharmacy: {
+      id: order.pharmacy_id,
+      name: order.pharmacy_name,
+      community: order.pharmacy_community,
+      phone: order.pharmacy_phone,
+      address: order.pharmacy_address,
+      landmark: order.pharmacy_landmark,
+    },
+    items: (order.items || []).map((item) => ({
+      id: item.id,
+      medicine_id: item.medicine_id,
+      brand_name: item.brand_name,
+      generic_name: item.generic_name,
+      strength: item.strength,
+      dosage_form: item.dosage_form,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      requires_prescription: item.requires_prescription,
+    })),
+    prescriptions: (order.prescriptions || []).map((prescription) => ({
+      id: prescription.id,
+      status: prescription.status,
+      remarks: prescription.remarks,
+      reviewed_at: prescription.reviewed_at,
+      created_at: prescription.created_at,
+    })),
+    events: (order.events || []).map((event) => ({
+      status: event.status,
+      note: event.note,
+      created_at: event.created_at,
+    })),
+  };
+}
+
+export function trackOrder({ reference, phone }) {
+  const guestPhone = normalisePhone(phone);
+  const order = ordersRepo.findByReference(String(reference || '').trim().toUpperCase());
+  // Same response for an unknown reference and a wrong phone so references
+  // cannot be probed.
+  if (!order || !order.guest_phone || order.guest_phone !== guestPhone) throw notFound(TRACK_ERROR);
+  return publicOrder(ordersRepo.detail(order.id));
+}
+
+/** Verifies guest ownership before accepting a prescription file. */
+export function guestOrderByProof(orderId, { reference, phone }) {
+  const order = ordersRepo.findRaw(orderId);
+  if (
+    !order ||
+    !order.guest_phone ||
+    order.reference !== String(reference || '').trim().toUpperCase() ||
+    order.guest_phone !== normalisePhone(phone)
+  ) {
+    throw notFound(TRACK_ERROR);
+  }
+  return order;
+}
+
+/**
+ * Places an order from the browser's guest cart. The items and pharmacy arrive
+ * with the request because guests have no server-side cart. Stock, FEFO,
+ * payment and delivery rules are identical to a signed-in order.
+ */
+export async function placeGuestOrder(input, ip = null) {
+  const guestPhone = normalisePhone(input.phone);
+  if (!isValidGhanaPhone(guestPhone)) throw badRequest('Enter a valid Ghana phone number.');
+  const momoPhone = normalisePhone(input.momoPhone || guestPhone);
+  if (input.paymentMethod === 'momo') {
+    if (!input.network) throw badRequest('Choose a mobile money network.');
+    if (!isValidGhanaPhone(momoPhone)) throw badRequest('Enter a valid mobile money phone number.');
+  }
+  if (!input.consent) throw badRequest('You must agree to the privacy notice before placing an order.');
+
+  const result = immediateTransaction(() => {
+    const pharmacy = catalogueRepo.getPharmacy(input.pharmacyId);
+    if (!pharmacy || !pharmacy.is_active) throw conflict('The selected pharmacy is not available.');
+    if (!input.items?.length) throw badRequest('Your cart is empty.');
+
+    const delivery = resolveDelivery(input.pharmacyId, input);
+    const items = input.items.map((item) => {
+      const medicine = catalogueRepo.getMedicine(item.medicineId);
+      const pm = catalogueRepo.getPharmacyMedicine(input.pharmacyId, item.medicineId);
+      if (!medicine || !medicine.is_active || !pm || !pm.is_active) {
+        throw conflict('One of the medicines is no longer sold by this pharmacy.');
+      }
+      if (availableStock(input.pharmacyId, item.medicineId) < item.quantity) {
+        throw conflict('Not enough stock available for one of the items.', [
+          { medicineId: item.medicineId, requested: item.quantity },
+        ]);
+      }
+      return {
+        medicineId: item.medicineId,
+        quantity: item.quantity,
+        unitPrice: pm.price,
+        name: `${medicine.brand_name}${medicine.strength ? ` ${medicine.strength}` : ''}`,
+        requiresPrescription: Boolean(medicine.requires_prescription),
+      };
+    });
+
+    const subtotal = roundMoney(items.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0));
+    const total = roundMoney(subtotal + delivery.deliveryFee);
+    const requiresPrescription = items.some((item) => item.requiresPrescription);
+    const status = requiresPrescription ? 'awaiting_prescription' : 'placed';
+    const paymentStatus = input.paymentMethod === 'cash' ? 'cash_on_pickup' : 'pending';
+
+    let reference = orderReference();
+    while (ordersRepo.findByReference(reference)) reference = orderReference();
+
+    const orderId = ordersRepo.createOrder({
+      reference,
+      customerId: null,
+      guestName: input.name.trim(),
+      guestPhone,
+      guestEmail: input.email?.trim() || null,
+      consentGivenAt: new Date().toISOString(),
+      pharmacyId: input.pharmacyId,
+      channel: 'online',
+      fulfilment: input.fulfilment,
+      deliveryZoneId: delivery.zoneId,
+      deliveryFee: delivery.deliveryFee,
+      deliveryAddress: delivery.deliveryAddress,
+      digitalAddressCode: delivery.digitalAddressCode,
+      status,
+      paymentStatus,
+      subtotal,
+      total,
+      notes: input.notes || null,
+      createdBy: null,
+    });
+
+    for (const item of items) {
+      const allocations = allocateFefo(input.pharmacyId, item.medicineId, item.quantity);
+      const orderItemId = ordersRepo.addItem(orderId, item);
+      for (const allocation of allocations) {
+        ordersRepo.addAllocation(orderItemId, allocation.batchId, allocation.quantity);
+      }
+    }
+
+    if (input.paymentMethod === 'cash') createCashPayment(orderId, total);
+    else createPendingMomoPayment(orderId, total, input.network, momoPhone);
+
+    if (input.fulfilment === 'delivery') deliveryRepo.createDelivery(orderId);
+    ordersRepo.addEvent(
+      orderId,
+      status,
+      requiresPrescription
+        ? 'Guest order placed. Waiting for a prescription so a pharmacist can verify it.'
+        : 'Guest order placed without an account.'
+    );
+    recordAudit({
+      userId: null,
+      action: 'guest_order_placed',
+      entity: 'order',
+      entityId: orderId,
+      after: { reference, total, payment_method: input.paymentMethod, phone: maskPhone(guestPhone) },
+      ip,
+    });
+    return { orderId, reference, paymentMethod: input.paymentMethod, total, phone: momoPhone, network: input.network };
+  });
+
+  if (result.paymentMethod === 'momo') {
+    await initiateMomoPayment(result.orderId, result.phone, result.network);
+  }
+
+  const order = ordersRepo.detail(result.orderId);
+  const message =
+    order.status === 'awaiting_prescription'
+      ? `Order ${order.reference} received. Upload your prescription so a pharmacist can verify it before release.`
+      : `Order ${order.reference} received by ${order.pharmacy_name}. Total GHS ${order.total.toFixed(2)}.`;
+  notifyOrderRecipient(
+    { customer_id: null, guest_phone: order.guest_phone, guest_email: order.guest_email },
+    'order_confirmation',
+    message,
+    { orderId: order.id }
+  ).catch(() => {});
+  return publicOrder(order);
 }
 
 const TRANSITIONS = {
@@ -225,8 +436,8 @@ export function updateOrderStatus(orderId, target, user, note) {
     out_for_delivery: `Order ${raw.reference} is out for delivery.`,
     completed: `Order ${raw.reference} is complete. Thank you for choosing ${raw.pharmacy_name || 'your pharmacy'}.`,
   };
-  if (raw.customer_id && messages[target]) {
-    notifyUser(raw.customer_id, `order_${target}`, messages[target], { orderId }).catch(() => {});
+  if (messages[target]) {
+    notifyOrderRecipient(raw, `order_${target}`, messages[target], { orderId }).catch(() => {});
   }
   return getOrder(orderId, user);
 }
@@ -259,11 +470,9 @@ export function cancelOrder(orderId, user, reason) {
       after: { status: 'cancelled', reason },
     });
   });
-  if (raw.customer_id) {
-    notifyUser(raw.customer_id, 'order_cancelled', `Order ${raw.reference} was cancelled. ${reason || ''}`.trim(), {
-      orderId,
-    }).catch(() => {});
-  }
+  notifyOrderRecipient(raw, 'order_cancelled', `Order ${raw.reference} was cancelled. ${reason || ''}`.trim(), {
+    orderId,
+  }).catch(() => {});
   return getOrder(orderId, user);
 }
 
@@ -323,6 +532,10 @@ export function createWalkInSale(user, input) {
     const newOrderId = ordersRepo.createOrder({
       reference,
       customerId: null,
+      guestName: null,
+      guestPhone: null,
+      guestEmail: null,
+      consentGivenAt: null,
       pharmacyId,
       channel: 'walk_in',
       fulfilment: 'pickup',

@@ -1,149 +1,95 @@
 import { Link } from 'react-router-dom';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
 import { useStaffPharmacy } from '../../components/PharmacyPicker.jsx';
-import { Badge, ErrorState, PageHeader, SkeletonCards, StatCard, StatusBadge } from '../../components/UI.jsx';
+import { DataTable, ErrorState, Loading, StatusBadge } from '../../components/UI.jsx';
 import { formatDate, formatMoney } from '../../utils/format.js';
 
 export default function DashboardPage() {
-  usePageTitle('Staff dashboard');
+  usePageTitle('Dashboard');
   const { user } = useStaffPharmacy();
   const { data, loading, error, reload } = useFetch('/dashboard');
 
-  if (loading) return <SkeletonCards count={6} />;
+  if (loading) return <Loading />;
   if (error) return <ErrorState error={error} retry={reload} />;
   if (!data) return null;
 
-  const isAdmin = user?.role === 'admin';
+  const alerts = data.alerts;
+  const alertParts = [];
+  if (alerts?.low_stock?.length) alertParts.push(`${alerts.low_stock.length} low stock`);
+  if (alerts?.expiring?.length) alertParts.push(`${alerts.expiring.length} expiring soon`);
+  if (alerts?.expired?.length) alertParts.push(`${alerts.expired.length} expired`);
+  const tiles = [
+    { label: 'Orders today', value: data.sales?.orders_today ?? 0, to: '/staff/orders' },
+    { label: 'Prescriptions waiting', value: data.orders?.pending_prescriptions ?? 0, to: '/staff/prescriptions' },
+    { label: 'Low stock', value: data.stock?.low_stock ?? 0, to: '/staff/alerts' },
+    { label: 'Expiring soon', value: data.stock?.expiring_batches ?? 0, to: '/staff/alerts' },
+  ];
 
   return (
     <>
-      <PageHeader
-        eyebrow={isAdmin ? 'Network overview' : user?.pharmacy_name || 'Your pharmacy'}
-        title={`Good day, ${user?.full_name?.split(' ')[0] || 'colleague'}`}
-        subtitle={
-          isAdmin
-            ? 'Network-wide activity across all 10 pharmacies. Choose a pharmacy from the staff pages to manage one outlet.'
-            : 'Today’s sales, orders, prescription queue and stock risks at a glance.'
-        }
-        actions={
-          <div className="row">
-            <Link to="/staff/orders" className="btn btn-secondary btn-sm">Order queue</Link>
-            <Link to="/staff/prescriptions" className="btn btn-primary btn-sm">Prescription queue</Link>
-          </div>
-        }
-      />
-
-      <div className="stat-grid">
-        <StatCard label="Sales today" value={formatMoney(data.sales.today)} hint={`${data.sales.orders_today} paid order(s)`} tone="success" icon="Money" />
-        <StatCard label="Sales this month" value={formatMoney(data.sales.month)} hint="Excludes cancelled orders" icon="ChartUp" />
-        <StatCard label="Active orders" value={data.orders.active} hint="Placed through out for delivery" tone="info" icon="Box" />
-        <StatCard label="Prescriptions waiting" value={data.orders.pending_prescriptions} hint="Needs pharmacist review" tone={data.orders.pending_prescriptions ? 'warning' : 'success'} icon="Clipboard" />
-        <StatCard label="Low stock lines" value={data.stock.low_stock} hint={`${data.stock.out_of_stock ?? 0} out of stock`} tone={data.stock.low_stock ? 'danger' : 'success'} icon="Warning" />
-        <StatCard label="Expiring batches" value={data.stock.expiring_batches} hint={`${data.stock.expired_batches ?? 0} already expired`} tone={data.stock.expiring_batches ? 'warning' : 'success'} icon="Calendar" />
+      <div className="page-title">
+        <div>
+          <h1>Dashboard</h1>
+          <p>{user?.pharmacy_name || 'All pharmacies'}</p>
+        </div>
+        <div className="page-actions">
+          <Link to="/staff/orders" className="btn btn-primary">
+            Order queue
+          </Link>
+        </div>
       </div>
 
-      {isAdmin && data.system && (
-        <div className="grid grid-4 mt-2">
-          <StatCard label="Pharmacies" value={data.system.pharmacies} icon="Hospital" />
-          <StatCard label="Active users" value={data.system.users} icon="Users" />
-          <StatCard label="Customers" value={data.system.customers} icon="Person" />
-          <StatCard label="Medicines" value={data.system.medicines} icon="Pill" />
+      <div className="summary-tiles">
+        {tiles.map((tile) => (
+          <Link key={tile.label} to={tile.to} className="summary-tile">
+            <span className="summary-value">{tile.value}</span>
+            <span className="summary-label">{tile.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {alertParts.length > 0 && (
+        <div className={`info-bar ${alerts?.expired?.length ? 'danger' : ''}`.trim()}>
+          <span>{alertParts.join(', ')}.</span>
+          <Link to="/staff/alerts">View stock alerts</Link>
         </div>
       )}
 
-      {data.alerts && (data.alerts.low_stock.length > 0 || data.alerts.expiring.length > 0 || data.alerts.expired.length > 0) && (
-        <section className="card mt-3">
-          <div className="card-header">
-            <h2>Stock risks that need attention</h2>
-            <Link to="/staff/alerts" className="btn btn-ghost btn-sm">All alerts</Link>
-          </div>
-          <div className="card-body">
-            <div className="grid grid-3">
-              <div>
-                <h3>Low stock</h3>
-                <div className="alert-list">
-                  {data.alerts.low_stock.length === 0 && <p className="small muted">Nothing below reorder level.</p>}
-                  {data.alerts.low_stock.map((row) => (
-                    <div className="alert-item" key={`low-${row.pharmacy_id || ''}-${row.medicine_id}`}>
-                      <span className="alert-dot danger" aria-hidden="true" />
-                      <div>
-                        <strong>{row.brand_name}{row.strength ? ` ${row.strength}` : ''}</strong>
-                        <div className="tiny muted">Stock {row.stock} · reorder at {row.reorder_level}{row.pharmacy_name ? ` · ${row.pharmacy_name}` : ''}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3>Expiring soon</h3>
-                <div className="alert-list">
-                  {data.alerts.expiring.length === 0 && <p className="small muted">No batches inside the alert window.</p>}
-                  {data.alerts.expiring.map((row) => (
-                    <div className="alert-item" key={`exp-${row.id}`}>
-                      <span className="alert-dot info" aria-hidden="true" />
-                      <div>
-                        <strong>{row.brand_name}{row.strength ? ` ${row.strength}` : ''}</strong>
-                        <div className="tiny muted">Batch {row.batch_no} · {row.quantity_on_hand} units · expires {formatDate(row.expiry_date)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h3>Expired</h3>
-                <div className="alert-list">
-                  {data.alerts.expired.length === 0 && <p className="small muted">No expired stock on hand.</p>}
-                  {data.alerts.expired.map((row) => (
-                    <div className="alert-item" key={`expired-${row.id}`}>
-                      <span className="alert-dot danger" aria-hidden="true" />
-                      <div>
-                        <strong>{row.brand_name}{row.strength ? ` ${row.strength}` : ''}</strong>
-                        <div className="tiny muted">Batch {row.batch_no} · {row.quantity_on_hand} units · expired {formatDate(row.expiry_date)}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
+      {data.orders?.pending_prescriptions > 0 && (
+        <div className="info-bar">
+          <span>
+            {data.orders.pending_prescriptions} prescription
+            {data.orders.pending_prescriptions === 1 ? '' : 's'} waiting for review.
+          </span>
+          <Link to="/staff/prescriptions">Review</Link>
+        </div>
       )}
 
-      <section className="card mt-3">
-        <div className="card-header">
-          <h2>Recent orders</h2>
-          <Link to="/staff/orders" className="btn btn-ghost btn-sm">Open order queue</Link>
-        </div>
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Reference</th>
-                <th>Customer</th>
-                <th>Pharmacy</th>
-                <th>Status</th>
-                <th className="text-right">Total</th>
-                <th>Placed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.recent_orders?.map((order) => (
-                <tr key={order.id}>
-                  <td><Link to={`/orders/${order.id}`}>{order.reference}</Link></td>
-                  <td>{order.customer_name || 'Walk-in'}</td>
-                  <td>{order.pharmacy_name}</td>
-                  <td><StatusBadge status={order.status} /></td>
-                  <td className="text-right">{formatMoney(order.total)}</td>
-                  <td className="nowrap small muted">{formatDate(order.created_at)}</td>
-                </tr>
-              ))}
-              {!data.recent_orders?.length && (
-                <tr><td colSpan={6} className="muted">No orders yet.</td></tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </section>
+      <h2 className="section-heading">Recent orders</h2>
+      <DataTable
+        rows={data.recent_orders || []}
+        empty="No orders yet."
+        columns={[
+          {
+            key: 'reference',
+            label: 'Reference',
+            render: (order) => <Link to={`/orders/${order.id}`}>{order.reference}</Link>,
+          },
+          { key: 'customer', label: 'Customer', render: (order) => order.customer_name || 'Walk-in' },
+          { key: 'status', label: 'Status', render: (order) => <StatusBadge status={order.status} /> },
+          {
+            key: 'total',
+            label: 'Total',
+            align: 'right',
+            render: (order) => formatMoney(order.total),
+          },
+          {
+            key: 'created_at',
+            label: 'Placed',
+            render: (order) => <span className="nowrap">{formatDate(order.created_at)}</span>,
+          },
+        ]}
+      />
     </>
   );
 }

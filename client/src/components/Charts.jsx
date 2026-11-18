@@ -1,94 +1,101 @@
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  Legend,
-  Filler,
-} from 'chart.js';
-import { Line, Bar, Doughnut } from 'react-chartjs-2';
+import { formatMoney } from '../utils/format.js';
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend, Filler);
+const WIDTH = 300;
+const HEIGHT = 120;
+const PAD = 10;
 
-const palette = ['#0f766e', '#14b8a6', '#f59e0b', '#0ea5e9', '#8b5cf6', '#ef4444', '#84cc16', '#64748b'];
+function scalePoints(values) {
+  if (!values.length) return '';
+  const max = Math.max(...values, 1);
+  const step = values.length > 1 ? (WIDTH - PAD * 2) / (values.length - 1) : 0;
+  return values
+    .map((value, index) => {
+      const x = PAD + index * step;
+      const y = HEIGHT - PAD - (value / max) * (HEIGHT - PAD * 2);
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    })
+    .join(' ');
+}
 
-const baseOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { labels: { color: '#334155', font: { size: 11 } } },
-    tooltip: { backgroundColor: '#0f172a' },
-  },
-  scales: {
-    x: { ticks: { color: '#475569', font: { size: 10 } }, grid: { color: '#e2e8f0' } },
-    y: { ticks: { color: '#475569', font: { size: 10 } }, grid: { color: '#e2e8f0' }, beginAtZero: true },
-  },
-};
-
-export function SalesLineChart({ labels, values, label = 'Revenue (GHS)' }) {
+export function SalesLineChart({ labels = [], values = [], label = 'Revenue' }) {
+  const points = scalePoints(values);
   return (
-    <Line
-      data={{
-        labels,
-        datasets: [
-          {
-            label,
-            data: values,
-            borderColor: '#0f766e',
-            backgroundColor: 'rgba(20, 184, 166, 0.18)',
-            fill: true,
-            tension: 0.3,
-            pointRadius: 2,
-          },
-        ],
-      }}
-      options={baseOptions}
-      aria-label={`${label} line chart`}
-    />
+    <figure className="chart-figure">
+      <svg
+        className="chart"
+        viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+        role="img"
+        aria-label={`${label}: ${labels.map((entry, index) => `${entry} ${formatMoney(values[index] || 0)}`).join(', ')}`}
+      >
+        <line className="chart-grid" x1={PAD} y1={PAD} x2={WIDTH - PAD} y2={PAD} />
+        <line className="chart-grid" x1={PAD} y1={HEIGHT / 2} x2={WIDTH - PAD} y2={HEIGHT / 2} />
+        <line className="chart-axis" x1={PAD} y1={HEIGHT - PAD} x2={WIDTH - PAD} y2={HEIGHT - PAD} />
+        {points && <polyline className="chart-line" points={points} fill="none" strokeWidth="2" />}
+      </svg>
+      <figcaption className="chart-caption">
+        {labels.length > 0 ? `${labels[0]} to ${labels[labels.length - 1]}` : 'No data for this period'}
+      </figcaption>
+    </figure>
   );
 }
 
-export function SimpleBarChart({ labels, values, label = 'Units', horizontal = false, colors }) {
+export function SimpleBarChart({
+  labels = [],
+  values = [],
+  label = 'Units',
+  format = (value) => value,
+  tone = 'green',
+}) {
+  const max = Math.max(...values, 1);
+  if (!labels.length) return <p className="empty">No data for this period.</p>;
   return (
-    <Bar
-      data={{
-        labels,
-        datasets: [
-          {
-            label,
-            data: values,
-            backgroundColor: colors || palette,
-            borderRadius: 4,
-          },
-        ],
-      }}
-      options={{
-        ...baseOptions,
-        indexAxis: horizontal ? 'y' : 'x',
-        plugins: { ...baseOptions.plugins, legend: { display: false } },
-      }}
-      aria-label={`${label} bar chart`}
-    />
+    <figure className="chart-figure">
+      <div className="bars" role="img" aria-label={label}>
+        {labels.map((entry, index) => (
+          <div className="bar-row" key={`${entry}-${index}`}>
+            <span title={entry}>{entry}</span>
+            <span className="bar-track">
+              <span
+                className={`bar-fill ${tone === 'amber' ? 'amber' : ''}`.trim()}
+                style={{ width: `${Math.round(((values[index] || 0) / max) * 100)}%` }}
+              />
+            </span>
+            <span>{format(values[index] || 0)}</span>
+          </div>
+        ))}
+      </div>
+      <figcaption className="chart-caption">{label}</figcaption>
+    </figure>
   );
 }
 
-export function BreakdownDoughnut({ labels, values, label = 'Breakdown' }) {
+export function BreakdownDoughnut({
+  labels = [],
+  values = [],
+  label = 'Breakdown',
+  format = (value) => value,
+  tone = 'green',
+}) {
+  const total = values.reduce((sum, value) => sum + (Number(value) || 0), 0);
+  if (!labels.length) return <p className="empty">No data for this period.</p>;
   return (
-    <Doughnut
-      data={{
-        labels,
-        datasets: [{ data: values, backgroundColor: palette, borderWidth: 2, borderColor: '#fff' }],
-      }}
-      options={{
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { ...baseOptions.plugins, legend: { position: 'bottom', labels: { color: '#334155', font: { size: 11 } } } },
-      }}
-      aria-label={`${label} doughnut chart`}
-    />
+    <figure className="chart-figure">
+      <div className="bars" role="img" aria-label={label}>
+        {labels.map((entry, index) => {
+          const value = Number(values[index]) || 0;
+          const share = total ? Math.round((value / total) * 100) : 0;
+          return (
+            <div className="bar-row" key={`${entry}-${index}`}>
+              <span title={entry}>{entry}</span>
+              <span className="bar-track">
+                <span className={`bar-fill ${tone === 'amber' ? 'amber' : ''}`.trim()} style={{ width: `${share}%` }} />
+              </span>
+              <span>{format(value)}</span>
+            </div>
+          );
+        })}
+      </div>
+      <figcaption className="chart-caption">{label}</figcaption>
+    </figure>
   );
 }

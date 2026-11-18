@@ -8,6 +8,7 @@ export const place = asyncHandler(async (req, res) => {
   const order = await orderService.placeOrder(req.user, req.body);
   res.status(201).json({ order });
 });
+export const track = (req, res) => res.json({ order: orderService.trackOrder(req.body) });
 export const updateStatus = (req, res) => {
   res.json({ order: orderService.updateOrderStatus(req.params.id, req.body.status, req.user, req.body.note) });
 };

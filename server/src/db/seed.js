@@ -1,6 +1,7 @@
 /* eslint-disable no-console */
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import PDFDocument from 'pdfkit';
 import { finished } from 'node:stream/promises';
 import { config } from '../config.js';
@@ -315,10 +316,12 @@ async function seed() {
 
   // ---- historical orders (3 months) ----
   const insertOrder = db.prepare(
-    `INSERT INTO orders (reference, customer_id, pharmacy_id, channel, fulfilment, delivery_zone_id,
+    `INSERT INTO orders (reference, customer_id, guest_name, guest_phone, guest_email, consent_given_at,
+      pharmacy_id, channel, fulfilment, delivery_zone_id,
       delivery_fee, delivery_address, digital_address_code, status, payment_status, subtotal, total,
       created_by, created_at, updated_at)
-     VALUES (@reference, @customerId, @pharmacyId, @channel, @fulfilment, @zoneId, @fee,
+     VALUES (@reference, @customerId, @guestName, @guestPhone, @guestEmail, @consentGivenAt,
+      @pharmacyId, @channel, @fulfilment, @zoneId, @fee,
       @address, @digital, @status, @paymentStatus, @subtotal, @total, @createdBy, @createdAt, @createdAt)`
   );
   const insertOrderItem = db.prepare(
@@ -449,6 +452,10 @@ async function seed() {
       const info = insertOrder.run({
         reference,
         customerId,
+        guestName: null,
+        guestPhone: null,
+        guestEmail: null,
+        consentGivenAt: null,
         pharmacyId: pid,
         channel,
         fulfilment,
@@ -513,7 +520,8 @@ async function seed() {
     const createdAt = new Date(Date.now() - int(0, 2) * DAY);
     const reference = `PH-${createdAt.toISOString().slice(0, 10).replace(/-/g, '')}-P${String(i + 1).padStart(3, '0')}`;
     const info = insertOrder.run({
-      reference, customerId, pharmacyId: pid, channel: 'online', fulfilment: 'pickup', zoneId: null,
+      reference, customerId, guestName: null, guestPhone: null, guestEmail: null, consentGivenAt: null,
+      pharmacyId: pid, channel: 'online', fulfilment: 'pickup', zoneId: null,
       fee: 0, address: null, digital: null, status: 'awaiting_prescription',
       paymentStatus: 'success', subtotal, total: subtotal, createdBy: customerId,
       createdAt: isoDateTime(createdAt),
@@ -526,6 +534,135 @@ async function seed() {
     }
     insertPayment.run(info.lastInsertRowid, 'momo', 'MTN', db.prepare('SELECT phone FROM users WHERE id = ?').get(customerId).phone, `SEED-PENDING-${i + 1}`, 'success', subtotal, isoDateTime(createdAt), isoDateTime(createdAt));
     insertPendingPrescription.run(info.lastInsertRowid, customerId, demoPrescription, isoDateTime(createdAt));
+  }
+
+  // ---- guest orders placed without an account ----
+  const guestOrders = [
+    {
+      pid: pharmacyIds[0],
+      mid: medicineIds[0],
+      qty: 2,
+      name: 'Ama Mensah',
+      phone: '+233244000001',
+      email: null,
+      status: 'placed',
+      fulfilment: 'pickup',
+      payment: 'cash',
+      daysAgo: 1,
+    },
+    {
+      pid: pharmacyIds[6],
+      mid: medicineIds[1],
+      qty: 1,
+      name: 'Kojo Owusu',
+      phone: '+233244000002',
+      email: 'kojo.owusu@example.com',
+      status: 'ready',
+      fulfilment: 'delivery',
+      payment: 'cash',
+      daysAgo: 0,
+    },
+    {
+      pid: pharmacyIds[2],
+      mid: medicineIds[21],
+      qty: 3,
+      name: 'Efua Asare',
+      phone: '+233244000003',
+      email: null,
+      status: 'completed',
+      fulfilment: 'pickup',
+      payment: 'momo',
+      daysAgo: 6,
+    },
+    {
+      pid: pharmacyIds[3],
+      mid: medicineIds[4],
+      qty: 1,
+      name: 'Yaw Boateng',
+      phone: '+233244000004',
+      email: null,
+      status: 'awaiting_prescription',
+      fulfilment: 'pickup',
+      payment: 'cash',
+      daysAgo: 0,
+      pom: true,
+    },
+  ];
+
+  for (const [index, guest] of guestOrders.entries()) {
+    const pm = db
+      .prepare('SELECT price FROM pharmacy_medicines WHERE pharmacy_id = ? AND medicine_id = ?')
+      .get(guest.pid, guest.mid);
+    if (!pm) continue;
+    const allocations = allocate(guest.pid, guest.mid, guest.qty);
+    if (!allocations) continue;
+    const createdAt = new Date(Date.now() - guest.daysAgo * DAY - int(1, 6) * 60 * 60 * 1000);
+    const zoneId = guest.fulfilment === 'delivery' ? zonesByPharmacy.get(guest.pid)[0] : null;
+    const fee = guest.fulfilment === 'delivery' ? 10 : 0;
+    const subtotal = Math.round(pm.price * guest.qty * 100) / 100;
+    const total = Math.round((subtotal + fee) * 100) / 100;
+    let reference = orderReference(createdAt);
+    while (references.has(reference)) reference = orderReference(createdAt);
+    references.add(reference);
+
+    const info = insertOrder.run({
+      reference,
+      customerId: null,
+      guestName: guest.name,
+      guestPhone: guest.phone,
+      guestEmail: guest.email,
+      consentGivenAt: isoDateTime(createdAt),
+      pharmacyId: guest.pid,
+      channel: 'online',
+      fulfilment: guest.fulfilment,
+      zoneId,
+      fee,
+      address: guest.fulfilment === 'delivery' ? `House ${int(1, 60)}, ${guest.pid <= 6 ? 'Kordibe' : 'Doryumu'} Central` : null,
+      digital: guest.fulfilment === 'delivery' ? `GA-${int(100, 999)}-${int(1000, 9999)}` : null,
+      status: guest.status,
+      paymentStatus: guest.payment === 'cash' ? 'cash_on_pickup' : 'success',
+      subtotal,
+      total,
+      createdBy: null,
+      createdAt: isoDateTime(createdAt),
+    });
+    const orderId = info.lastInsertRowid;
+    const itemInfo = insertOrderItem.run(
+      orderId,
+      guest.mid,
+      guest.qty,
+      pm.price,
+      `${MEDICINES[medicineIds.indexOf(guest.mid)][0]} ${MEDICINES[medicineIds.indexOf(guest.mid)][2]}`
+    );
+    for (const [batchId, qtyTaken] of allocations) {
+      insertAllocation.run(itemInfo.lastInsertRowid, batchId, qtyTaken);
+    }
+    insertPayment.run(
+      orderId,
+      guest.payment,
+      guest.payment === 'momo' ? pick(['MTN', 'Telecel', 'AT']) : null,
+      guest.phone,
+      `SEED-GUEST-${index + 1}`,
+      'success',
+      total,
+      isoDateTime(createdAt),
+      isoDateTime(createdAt)
+    );
+    if (guest.fulfilment === 'delivery') {
+      insertDelivery.run(orderId, guest.pid <= 6 ? rider1 : rider2, 'assigned', isoDateTime(createdAt));
+    }
+    if (guest.pom) {
+      insertPendingPrescription.run(orderId, null, demoPrescription, isoDateTime(createdAt));
+    }
+    insertNotification.run(
+      null,
+      orderId,
+      'sms',
+      'order_confirmation',
+      guest.phone,
+      `Order ${reference} received by the pharmacy.`,
+      isoDateTime(createdAt)
+    );
   }
 
   // ---- purchase orders ----
@@ -587,7 +724,7 @@ async function seed() {
     pharmacies: pharmacyIds.length,
     medicines: medicineIds.length,
     users: 1 + pharmacistIds.length + riderIds.length + customerIds.length,
-    orders: orderCount + 4,
+    orders: orderCount + 4 + guestOrders.length,
   };
   console.log(`[seed] done: ${counts.pharmacies} pharmacies, ${counts.medicines} medicines, ${counts.users} users, ${counts.orders} orders.`);
   console.log('[seed] demo logins (phone / password):');
@@ -597,9 +734,15 @@ async function seed() {
   console.log('  customer    +233243000001 / Customer123!');
 }
 
-seed()
-  .then(() => process.exit(0))
-  .catch((err) => {
-    console.error('[seed] failed', err);
-    process.exit(1);
-  });
+export { seed };
+
+const invokedDirectly =
+  process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (invokedDirectly) {
+  seed()
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('[seed] failed', err);
+      process.exit(1);
+    });
+}

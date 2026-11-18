@@ -1,4 +1,5 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -15,6 +16,7 @@ import userRoutes from './routes/users.js';
 import catalogueRoutes from './routes/catalogue.js';
 import cartRoutes from './routes/cart.js';
 import orderRoutes from './routes/orders.js';
+import guestRoutes from './routes/guest.js';
 import prescriptionRoutes from './routes/prescriptions.js';
 import paymentRoutes from './routes/payments.js';
 import inventoryRoutes from './routes/inventory.js';
@@ -37,7 +39,18 @@ export function createApp() {
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
-  app.use(cors({ origin: config.clientOrigin, credentials: true }));
+  const allowedOrigins = String(config.clientOrigin || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const corsOrigin = (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin)) return cb(null, true);
+    if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) return cb(null, true);
+    if (/^http:\/\/localhost:\d+$/i.test(origin)) return cb(null, true);
+    return cb(new Error('Origin not allowed by CORS'));
+  };
+  app.use(cors({ origin: corsOrigin, credentials: true }));
   app.use(compression());
   app.use(cookieParser());
   app.use(express.json({ limit: '1mb' }));
@@ -63,6 +76,7 @@ export function createApp() {
   app.use('/api/users', userRoutes);
   app.use('/api/cart', cartRoutes);
   app.use('/api/orders', orderRoutes);
+  app.use('/api/guest', guestRoutes);
   app.use('/api', catalogueRoutes);
   app.use('/api', prescriptionRoutes);
   app.use('/api', paymentRoutes);
@@ -78,11 +92,14 @@ export function createApp() {
   app.use('/api', notFoundHandler);
 
   // In production the Vite build is served by Express (single origin, HTTPS
-  // terminated by the reverse proxy).
+  // terminated by the reverse proxy). When the frontend is hosted separately
+  // (e.g. on Vercel) the dist folder is absent, so guard against that.
   if (config.isProduction) {
     const dist = path.join(PROJECT_ROOT, 'client/dist');
-    app.use(express.static(dist, { maxAge: '1d' }));
-    app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+    if (fs.existsSync(dist) && fs.existsSync(path.join(dist, 'index.html'))) {
+      app.use(express.static(dist, { maxAge: '1d' }));
+      app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+    }
   }
 
   app.use(errorHandler);

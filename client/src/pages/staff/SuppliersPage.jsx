@@ -3,16 +3,7 @@ import { api } from '../../api/client.js';
 import { useFetch, usePageTitle } from '../../hooks/useApi.js';
 import { useStaffPharmacy } from '../../components/PharmacyPicker.jsx';
 import PharmacyPicker from '../../components/PharmacyPicker.jsx';
-import {
-  Alert,
-  Badge,
-  EmptyState,
-  ErrorState,
-  Field,
-  Modal,
-  PageHeader,
-  Skeleton,
-} from '../../components/UI.jsx';
+import { DataTable, ErrorState, Field, Loading, Modal } from '../../components/UI.jsx';
 
 const EMPTY = { name: '', contactPerson: '', phone: '', email: '', address: '', isActive: true };
 
@@ -20,14 +11,19 @@ export default function SuppliersPage() {
   usePageTitle('Suppliers');
   const { pharmacyId, setPharmacyId, isAdmin } = useStaffPharmacy();
   const query = isAdmin ? `?pharmacyId=${pharmacyId}&includeInactive=true` : '?includeInactive=true';
-  const { data, loading, error, reload } = useFetch(`/suppliers${query}`);
+  const { data, loading, error, reload } = useFetch(`/suppliers${query}`, [pharmacyId]);
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(EMPTY);
   const [busy, setBusy] = useState(false);
-  const [notice, setNotice] = useState(null);
-  const [actionError, setActionError] = useState(null);
+  const [notice, setNotice] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  const openCreate = () => { setEditing({ id: null }); setForm(EMPTY); setActionError(null); };
+  const openCreate = () => {
+    setEditing({ id: null });
+    setForm(EMPTY);
+    setActionError('');
+  };
+
   const openEdit = (supplier) => {
     setEditing(supplier);
     setForm({
@@ -38,98 +34,107 @@ export default function SuppliersPage() {
       address: supplier.address || '',
       isActive: Boolean(supplier.is_active),
     });
-    setActionError(null);
+    setActionError('');
   };
 
   const submit = async (event) => {
     event.preventDefault();
     setBusy(true);
-    setActionError(null);
+    setActionError('');
     try {
       const body = {
         ...form,
         pharmacyId: isAdmin ? pharmacyId : undefined,
         email: form.email || undefined,
       };
-      if (editing.id) {
-        await api(`/suppliers/${editing.id}`, { method: 'PATCH', body });
-        setNotice('Supplier updated.');
-      } else {
-        await api('/suppliers', { method: 'POST', body });
-        setNotice('Supplier created.');
-      }
+      if (editing.id) await api(`/suppliers/${editing.id}`, { method: 'PATCH', body });
+      else await api('/suppliers', { method: 'POST', body });
+      setNotice(editing.id ? 'Supplier updated.' : 'Supplier added.');
       setEditing(null);
-      reload();
+      await reload();
     } catch (err) {
-      setActionError(err);
+      setActionError(err.message || 'Could not save the supplier.');
     } finally {
       setBusy(false);
     }
   };
 
   const deactivate = async (supplier) => {
-    if (!window.confirm(`Deactivate ${supplier.name}? Existing batches keep their supplier record.`)) return;
-    setNotice(null);
-    setActionError(null);
+    if (!window.confirm(`Deactivate ${supplier.name}?`)) return;
+    setNotice('');
+    setActionError('');
     try {
       await api(`/suppliers/${supplier.id}`, { method: 'DELETE' });
       setNotice('Supplier deactivated.');
-      reload();
+      await reload();
     } catch (err) {
-      setActionError(err);
+      setActionError(err.message || 'Could not deactivate the supplier.');
     }
   };
 
   const items = data?.items || [];
-  const update = (key) => (event) => setForm((current) => ({ ...current, [key]: event.target.type === 'checkbox' ? event.target.checked : event.target.value }));
+  const update = (key) => (event) =>
+    setForm((current) => ({
+      ...current,
+      [key]: event.target.type === 'checkbox' ? event.target.checked : event.target.value,
+    }));
 
   return (
     <>
-      <PageHeader
-        eyebrow="Procurement"
-        title="Suppliers"
-        subtitle="Keep contact details for the wholesalers and distributors your pharmacy buys from."
-        actions={<button type="button" className="btn btn-primary btn-sm" onClick={openCreate}>Add supplier</button>}
-      />
+      <div className="page-title">
+        <div>
+          <h1>Suppliers</h1>
+        </div>
+        <div className="page-actions">
+          <button type="button" className="btn btn-primary" onClick={openCreate}>
+            Add supplier
+          </button>
+        </div>
+      </div>
 
       {isAdmin && <PharmacyPicker pharmacyId={pharmacyId} onChange={setPharmacyId} />}
-      {notice && <Alert tone="success">{notice}</Alert>}
-      {actionError && !editing && <Alert tone="error">{actionError.message}</Alert>}
+      {notice && <p className="success-text">{notice}</p>}
+      {actionError && !editing && <p className="error-text">{actionError}</p>}
 
       {error && <ErrorState error={error} retry={reload} />}
-      {loading && <Skeleton lines={6} />}
+      {loading && <Loading />}
 
-      {!loading && !error && items.length === 0 && (
-        <EmptyState title="No suppliers yet" action={<button type="button" className="btn btn-primary" onClick={openCreate}>Add your first supplier</button>}>
-          Suppliers are attached to a pharmacy and used when receiving stock or raising purchase orders.
-        </EmptyState>
-      )}
-
-      {!loading && items.length > 0 && (
-        <div className="grid grid-2">
-          {items.map((supplier) => (
-            <article className="card" key={supplier.id}>
-              <div className="card-body">
-                <div className="row between">
-                  <h3 className="mb-0">{supplier.name}</h3>
-                  <Badge tone={supplier.is_active ? 'success' : 'neutral'}>{supplier.is_active ? 'Active' : 'Inactive'}</Badge>
-                </div>
-                <p className="small muted mt-1 mb-1">
-                  {supplier.contact_person || 'No contact person'} · {supplier.phone || 'No phone'}
-                </p>
-                <p className="small muted mb-1">{supplier.email || 'No email'}</p>
-                <p className="small mb-0">{supplier.address || 'No address'}</p>
-                <div className="row mt-2">
-                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(supplier)}>Edit</button>
-                  {supplier.is_active && (
-                    <button type="button" className="btn btn-ghost btn-sm" onClick={() => deactivate(supplier)}>Deactivate</button>
+      {!loading && !error && (
+        <DataTable
+          rows={items}
+          empty="No suppliers yet."
+          columns={[
+            { key: 'name', label: 'Supplier', render: (supplier) => <strong>{supplier.name}</strong> },
+            {
+              key: 'contact',
+              label: 'Contact',
+              render: (supplier) => (
+                <>
+                  {supplier.contact_person || '—'}
+                  <div className="small muted">{supplier.phone || '—'}</div>
+                </>
+              ),
+            },
+            { key: 'address', label: 'Address', render: (supplier) => supplier.address || '—' },
+            { key: 'status', label: 'Status', render: (supplier) => (supplier.is_active ? 'Active' : 'Inactive') },
+            {
+              key: 'actions',
+              label: '',
+              render: (supplier) => (
+                <div className="table-actions">
+                  <button type="button" className="btn btn-secondary btn-sm" onClick={() => openEdit(supplier)}>
+                    Edit
+                  </button>
+                  {Boolean(supplier.is_active) && (
+                    <button type="button" className="link" onClick={() => deactivate(supplier)}>
+                      Deactivate
+                    </button>
                   )}
-                  <span className="tiny muted">{supplier.batch_count} batches received</span>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              ),
+            },
+          ]}
+        />
       )}
 
       <Modal
@@ -137,27 +142,41 @@ export default function SuppliersPage() {
         onClose={() => setEditing(null)}
         title={editing?.id ? 'Edit supplier' : 'Add supplier'}
         footer={
-          <div className="row">
-            <button type="button" className="btn btn-ghost" onClick={() => setEditing(null)}>Cancel</button>
-            <button type="submit" form="supplier-form" className="btn btn-primary" disabled={busy}>{busy ? 'Saving…' : 'Save supplier'}</button>
+          <div className="detail-actions">
+            <button type="button" className="btn btn-secondary" onClick={() => setEditing(null)}>
+              Cancel
+            </button>
+            <button type="submit" form="supplier-form" className="btn btn-primary" disabled={busy}>
+              {busy ? 'Please wait…' : 'Save'}
+            </button>
           </div>
         }
       >
-        <form id="supplier-form" onSubmit={submit} className="stack">
-          {actionError && <Alert tone="error">{actionError.message}</Alert>}
+        <form id="supplier-form" onSubmit={submit}>
+          {actionError && <p className="error-text">{actionError}</p>}
           <Field label="Supplier name" htmlFor="supplier-name" required>
             <input id="supplier-name" value={form.name} onChange={update('name')} required />
           </Field>
-          <div className="form-grid">
-            <Field label="Contact person" htmlFor="supplier-contact">
-              <input id="supplier-contact" value={form.contactPerson} onChange={update('contactPerson')} />
-            </Field>
-            <Field label="Phone" htmlFor="supplier-phone">
-              <input id="supplier-phone" value={form.phone} onChange={update('phone')} />
-            </Field>
-          </div>
+          <Field label="Contact person" htmlFor="supplier-contact">
+            <input id="supplier-contact" value={form.contactPerson} onChange={update('contactPerson')} />
+          </Field>
+          <Field label="Phone" htmlFor="supplier-phone">
+            <input
+              id="supplier-phone"
+              value={form.phone}
+              onChange={update('phone')}
+              inputMode="tel"
+              autoComplete="tel"
+            />
+          </Field>
           <Field label="Email" htmlFor="supplier-email">
-            <input id="supplier-email" type="email" value={form.email} onChange={update('email')} />
+            <input
+              id="supplier-email"
+              type="email"
+              value={form.email}
+              onChange={update('email')}
+              inputMode="email"
+            />
           </Field>
           <Field label="Address" htmlFor="supplier-address">
             <textarea id="supplier-address" rows={2} value={form.address} onChange={update('address')} />
@@ -165,7 +184,7 @@ export default function SuppliersPage() {
           {editing?.id && (
             <label className="checkbox">
               <input type="checkbox" checked={form.isActive} onChange={update('isActive')} />
-              Active (inactive suppliers cannot be selected for new stock)
+              Active
             </label>
           )}
         </form>

@@ -4,6 +4,8 @@
 
 PharmaLink serves four personas. All use the same React SPA with role-based routing.
 
+Demo accounts and credentials for every role are listed in [DEMO_LOGINS.md](DEMO_LOGINS.md).
+
 ## Customer
 
 1. **Register / login** at `/register` or `/login` (phone or email + password).

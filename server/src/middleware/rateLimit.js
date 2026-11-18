@@ -32,3 +32,35 @@ export const apiLimiter = rateLimit({
     },
   },
 });
+
+/** Guest checkout creates stock reservations, so keep this tighter than the API default. */
+export const guestOrderLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 12,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip,
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many guest orders from this device. Please wait a few minutes and try again.',
+      details: [],
+    },
+  },
+});
+
+/** Reference + phone lookups are guessable in theory, so limit them strictly. */
+export const trackLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  skip,
+  message: {
+    error: {
+      code: 'RATE_LIMITED',
+      message: 'Too many tracking attempts. Please wait a few minutes and try again.',
+      details: [],
+    },
+  },
+});
