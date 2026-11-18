@@ -9,7 +9,7 @@ Frontend on **Vercel**, backend on **Render**.
    - Build command: `npm install`
    - Start command: `npm run start`
    - Health check path: `/api/health`
-3. Add a persistent disk mounted at `/var/data` (1 GB is plenty).
+3. (Optional) Add a persistent disk mounted at `/var/data` only on a paid plan; the free tier uses ephemeral storage and re-seeds on a fresh deploy.
 4. Set environment variables:
    - `CLIENT_ORIGIN` = your Vercel URL (e.g. `https://pharmalink.vercel.app`). Comma-separate multiple origins.
    - `JWT_SECRET` = a long random string (Render can generate).
