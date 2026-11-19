@@ -31,6 +31,7 @@ const registerSchema = z.object({
   phone,
   email,
   password,
+  role: z.enum(['customer', 'pharmacist', 'rider', 'admin']).optional().default('customer'),
   community,
   deliveryAddress: z.string().trim().max(300).optional(),
   digitalAddressCode: digitalAddress,

@@ -30,6 +30,7 @@ const guestOrderSchema = z.object({
     .trim()
     .regex(/^[A-Za-z]{2}-\d{3}-\d{4}$/, 'Use a Ghana Post GPS code such as GA-123-4567')
     .optional(),
+  deliveryTime: z.string().trim().max(80).optional(),
   paymentMethod: z.enum(['momo', 'cash']),
   network: z.enum(['MTN', 'Telecel', 'AT']).optional(),
   momoPhone: z.string().trim().min(7).max(20).optional(),

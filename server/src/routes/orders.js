@@ -36,6 +36,7 @@ const placeSchema = z.object({
   deliveryZoneId: z.coerce.number().int().positive().optional(),
   deliveryAddress: z.string().trim().max(300).optional(),
   digitalAddressCode: digitalAddress,
+  deliveryTime: z.string().trim().max(80).optional(),
   paymentMethod: z.enum(['momo', 'cash']),
   network: z.enum(['MTN', 'Telecel', 'AT']).optional(),
   phone: z.string().trim().optional(),

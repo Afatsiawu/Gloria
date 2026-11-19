@@ -34,9 +34,10 @@ export async function register(input, ip) {
   const problems = passwordProblems(input.password);
   if (problems.length) throw badRequest(`Password must contain ${problems.join(', ')}.`);
 
+  const role = ['customer', 'pharmacist', 'rider'].includes(input.role) ? input.role : 'customer';
   const passwordHash = await hashPassword(input.password);
   const user = usersRepo.createUser({
-    role: 'customer',
+    role,
     fullName: input.fullName.trim(),
     phone,
     email: input.email ? input.email.toLowerCase() : null,
@@ -47,7 +48,9 @@ export async function register(input, ip) {
     digitalAddressCode: input.digitalAddressCode || null,
     consentAt: input.consent ? new Date().toISOString() : null,
   });
-  getDb().prepare('INSERT OR IGNORE INTO carts (customer_id) VALUES (?)').run(user.id);
+  if (user.role === 'customer') {
+    getDb().prepare('INSERT OR IGNORE INTO carts (customer_id) VALUES (?)').run(user.id);
+  }
   recordAudit({
     userId: user.id,
     action: 'register',

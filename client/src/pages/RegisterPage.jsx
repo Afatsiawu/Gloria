@@ -11,6 +11,7 @@ const EMPTY = {
   phone: '',
   email: '',
   password: '',
+  role: 'customer',
   community: 'Doryumu',
   deliveryAddress: '',
   digitalAddressCode: '',
@@ -108,6 +109,13 @@ export default function RegisterPage() {
             required
             minLength={8}
           />
+        </Field>
+        <Field label="Account type" htmlFor="role" required>
+          <select id="role" value={form.role} onChange={update('role')}>
+            <option value="customer">Customer</option>
+            <option value="pharmacist">Pharmacist</option>
+            <option value="rider">Rider</option>
+          </select>
         </Field>
         <Field label="Community" htmlFor="community" required>
           <select id="community" value={form.community} onChange={update('community')}>

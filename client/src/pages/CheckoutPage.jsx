@@ -44,6 +44,7 @@ export default function CheckoutPage() {
       deliveryZoneId: draft?.deliveryZoneId || '',
       landmark: draft?.landmark || user?.delivery_address || '',
       digitalAddressCode: draft?.digitalAddressCode || user?.digital_address_code || '',
+      deliveryTime: draft?.deliveryTime || '',
       paymentMethod: draft?.paymentMethod || 'cash',
       network: draft?.network || 'MTN',
       momoPhone: draft?.momoPhone || user?.phone || '',
@@ -158,6 +159,7 @@ export default function CheckoutPage() {
           body.deliveryZoneId = Number(form.deliveryZoneId);
           body.deliveryAddress = form.landmark;
           body.digitalAddressCode = form.digitalAddressCode;
+          if (form.deliveryTime) body.deliveryTime = form.deliveryTime;
         }
         if (form.paymentMethod === 'momo') {
           body.network = form.network;
@@ -190,6 +192,7 @@ export default function CheckoutPage() {
         body.deliveryZoneId = Number(form.deliveryZoneId);
         body.deliveryAddress = form.landmark;
         body.digitalAddressCode = form.digitalAddressCode;
+        if (form.deliveryTime) body.deliveryTime = form.deliveryTime;
       }
       if (form.paymentMethod === 'momo') {
         body.network = form.network;
@@ -330,6 +333,14 @@ export default function CheckoutPage() {
                       onChange={update('landmark')}
                       autoComplete="street-address"
                       required
+                    />
+                  </Field>
+                  <Field label="Preferred delivery time" htmlFor="deliveryTime" hint="Optional time you would like the delivery.">
+                    <input
+                      id="deliveryTime"
+                      type="time"
+                      value={form.deliveryTime}
+                      onChange={update('deliveryTime')}
                     />
                   </Field>
                 </div>

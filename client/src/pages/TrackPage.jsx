@@ -205,6 +205,9 @@ function TrackResult({ order, justPlaced, onReset, reference, phone, onUploaded 
         {order.fulfilment === 'delivery' && order.delivery_address && (
           <p className="small muted">Deliver to: {order.delivery_address}</p>
         )}
+        {order.fulfilment === 'delivery' && order.delivery_time && (
+          <p className="small muted">Preferred delivery time: {order.delivery_time}</p>
+        )}
       </section>
 
       <button type="button" className="link" onClick={onReset}>

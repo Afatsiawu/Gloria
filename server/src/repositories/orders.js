@@ -5,11 +5,11 @@ export function createOrder(data) {
     .prepare(
       `INSERT INTO orders (reference, customer_id, guest_name, guest_phone, guest_email, consent_given_at,
         pharmacy_id, channel, fulfilment, delivery_zone_id,
-        delivery_fee, delivery_address, digital_address_code, status, payment_status, subtotal, total,
+        delivery_fee, delivery_address, digital_address_code, delivery_time, status, payment_status, subtotal, total,
         notes, created_by)
        VALUES (@reference, @customerId, @guestName, @guestPhone, @guestEmail, @consentGivenAt,
         @pharmacyId, @channel, @fulfilment, @deliveryZoneId,
-        @deliveryFee, @deliveryAddress, @digitalAddressCode, @status, @paymentStatus, @subtotal, @total,
+        @deliveryFee, @deliveryAddress, @digitalAddressCode, @deliveryTime, @status, @paymentStatus, @subtotal, @total,
         @notes, @createdBy)`
     )
     .run(data);
