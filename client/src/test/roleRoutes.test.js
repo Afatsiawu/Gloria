@@ -10,7 +10,7 @@ import {
 
 describe('role home routes', () => {
   it('sends every role to its own area', () => {
-    expect(getHomeRoute('customer')).toBe('/account');
+    expect(getHomeRoute('customer')).toBe('/medicines');
     expect(getHomeRoute('pharmacist')).toBe('/dashboard');
     expect(getHomeRoute('admin')).toBe('/dashboard');
     expect(getHomeRoute('rider')).toBe('/rider');

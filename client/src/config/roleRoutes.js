@@ -10,7 +10,7 @@
 export const ROLES = ['customer', 'pharmacist', 'admin', 'rider'];
 
 export const HOME_ROUTES = {
-  customer: '/account',
+  customer: '/medicines',
   pharmacist: '/dashboard',
   admin: '/dashboard',
   rider: '/rider',
