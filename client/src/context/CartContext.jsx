@@ -213,7 +213,7 @@ export function CartProvider({ children }) {
       const next = { ...cart, items };
       writeGuestCart(next);
       setGuestCart(next);
-      return { added: true, quantity: nextQuantity - (existing?.quantity || 0) };
+      return { added: true, quantity: nextQuantity - (existing?.quantity || 0), pharmacy: resolved.pharmacy };
     },
     []
   );
@@ -223,6 +223,7 @@ export function CartProvider({ children }) {
       if (isCustomer) {
         const current = serverCart;
         let resolvedPharmacyId = pharmacyId;
+        let resolvedPharmacyName = null;
 
         // The catalogue page does not always know which pharmacy to use, so
         // resolve one from the medicine's availability (preferring the pharmacy
@@ -235,6 +236,9 @@ export function CartProvider({ children }) {
             [...rows].sort((a, b) => Number(a.price) - Number(b.price))[0];
           if (!chosen) throw new Error('This medicine is out of stock at the moment.');
           resolvedPharmacyId = chosen.pharmacy_id;
+          resolvedPharmacyName = chosen.pharmacy_name;
+        } else if (current?.pharmacy && Number(current.pharmacy.id) === Number(resolvedPharmacyId)) {
+          resolvedPharmacyName = current.pharmacy.name;
         }
 
         if (current?.pharmacy && Number(current.pharmacy.id) !== Number(resolvedPharmacyId)) {
@@ -248,7 +252,7 @@ export function CartProvider({ children }) {
         }
         await api('/cart/items', { method: 'POST', body: { medicineId, quantity, pharmacyId: resolvedPharmacyId } });
         await loadServerCart();
-        return { added: true };
+        return { added: true, pharmacy: resolvedPharmacyName ? { id: resolvedPharmacyId, name: resolvedPharmacyName } : { id: resolvedPharmacyId } };
       }
 
       const resolved = await resolveMedicine({ medicineId, pharmacyId, medicine });

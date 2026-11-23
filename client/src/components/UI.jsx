@@ -213,6 +213,7 @@ export function ProductCard({ medicine, onAdd, busy = false, added = false }) {
           <Link to={`/medicines/${medicine.id}`}>{name}</Link>
         </h3>
         {meta && <p className="product-meta">{meta}</p>}
+        {medicine.pharmacy_name && <p className="product-pharmacy muted small">From {medicine.pharmacy_name}</p>}
         <div className="product-price-row">
           <p className="product-price">{formatMoney(medicine.min_price)}</p>
           <StockChip stock={medicine.stock} />

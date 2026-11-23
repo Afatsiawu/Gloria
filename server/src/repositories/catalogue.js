@@ -54,7 +54,10 @@ export function searchMedicines({ q, categoryId, available, rx, community, pageS
               COALESCE(s.stock, 0) AS stock,
               COALESCE(pr.min_price, 0) AS min_price,
               COALESCE(pr.max_price, 0) AS max_price,
-              COALESCE(pr.pharmacy_count, 0) AS pharmacy_count
+              COALESCE(pr.pharmacy_count, 0) AS pharmacy_count,
+              (SELECT p.name FROM pharmacy_medicines pm JOIN pharmacies p ON p.id = pm.pharmacy_id
+                WHERE pm.medicine_id = m.id AND pm.is_active = 1
+                ORDER BY pm.price ASC, p.name ASC LIMIT 1) AS pharmacy_name
          ${base}
         ORDER BY m.brand_name COLLATE NOCASE LIMIT @limit OFFSET @offset`
     )

@@ -132,9 +132,12 @@ export default function MedicinesPage() {
   const add = async (medicine) => {
     setBusyId(medicine.id);
     try {
-      await addItem({ medicineId: medicine.id });
+      const result = await addItem({ medicineId: medicine.id });
       setAddedId(medicine.id);
-      setToast({ tone: 'success', message: `${medicine.brand_name} added to your cart.` });
+      setToast({
+        tone: 'success',
+        message: `${medicine.brand_name} added to your cart${result?.pharmacy?.name ? ` from ${result.pharmacy.name}` : ''}.`,
+      });
       clearTimeout(addedTimer.current);
       addedTimer.current = setTimeout(() => setAddedId(null), 2000);
     } catch (err) {
