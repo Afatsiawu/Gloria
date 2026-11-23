@@ -17,18 +17,26 @@ if (config.autoSeed) {
 }
 
 const app = createApp();
-const server = app.listen(config.port, () => {
-  console.log(`[server] PharmaLink API listening on http://localhost:${config.port}`);
-  console.log(`[server] environment=${config.nodeEnv} database=${config.dbPath}`);
-});
-startCronJobs();
 
-const shutdown = () => {
-  console.log('[server] shutting down...');
-  server.close(() => {
-    closeDb();
-    process.exit(0);
+// Vercel (and other serverless hosts) import this module and expect the Express
+// app to be exported rather than listening on a port. Long-running hosts use
+// app.listen() below.
+export default app;
+
+if (!process.env.VERCEL) {
+  const server = app.listen(config.port, () => {
+    console.log(`[server] PharmaLink API listening on http://localhost:${config.port}`);
+    console.log(`[server] environment=${config.nodeEnv} database=${config.dbPath}`);
   });
-};
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+  startCronJobs();
+
+  const shutdown = () => {
+    console.log('[server] shutting down...');
+    server.close(() => {
+      closeDb();
+      process.exit(0);
+    });
+  };
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
+}

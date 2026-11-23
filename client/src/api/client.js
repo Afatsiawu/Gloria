@@ -1,4 +1,4 @@
-const rawBase = import.meta.env.VITE_API_URL || '/api';
+const rawBase = import.meta.env.API_URL || import.meta.env.VITE_API_URL || '/api';
 const BASE = /\/api\/?$/.test(rawBase)
   ? rawBase.replace(/\/$/, '')
   : `${rawBase.replace(/\/$/, '')}/api`;
@@ -12,9 +12,17 @@ export class ApiError extends Error {
   }
 }
 
+let memoryCsrfToken = '';
+let memoryCsrfSignature = '';
+
 function csrfToken() {
+  if (memoryCsrfToken) return memoryCsrfToken;
   const match = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
   return match ? decodeURIComponent(match[1]) : '';
+}
+
+function csrfSignature() {
+  return memoryCsrfSignature;
 }
 
 export function errorMessage(error) {
@@ -35,23 +43,45 @@ const SESSION_FREE_PATHS = [
 ];
 
 export async function api(path, { method = 'GET', body, formData, signal, headers = {} } = {}) {
-  const options = { method, credentials: 'include', headers: { ...headers }, signal };
-  if (formData) {
-    options.body = formData;
-  } else if (body !== undefined) {
-    options.headers['Content-Type'] = 'application/json';
-    options.body = JSON.stringify(body);
+  const isUnsafe = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+
+  const buildOptions = () => {
+    const options = { method, credentials: 'include', headers: { ...headers }, signal };
+    if (formData) {
+      options.body = formData;
+    } else if (body !== undefined) {
+      options.headers['Content-Type'] = 'application/json';
+      options.body = JSON.stringify(body);
+    }
+    if (isUnsafe) {
+      options.headers['X-CSRF-Token'] = csrfToken();
+      const signature = csrfSignature();
+      if (signature) options.headers['X-CSRF-Signature'] = signature;
+    }
+    return options;
+  };
+
+  const doFetch = async () => {
+    try {
+      return await fetch(`${BASE}${path}`, buildOptions());
+    } catch (err) {
+      if (err.name === 'AbortError') throw err;
+      throw new ApiError(0, 'NETWORK_ERROR', 'You appear to be offline. Check your connection and try again.');
+    }
+  };
+
+  let response = await doFetch();
+
+  // Recover once from a stale/missing CSRF token by refreshing it and retrying.
+  if (response.status === 403 && isUnsafe && path !== '/auth/csrf') {
+    const clone = response.clone();
+    const payload = await clone.json().catch(() => null);
+    if (payload?.error?.message?.toLowerCase().includes('security token')) {
+      await ensureCsrf();
+      response = await doFetch();
+    }
   }
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(method)) {
-    options.headers['X-CSRF-Token'] = csrfToken();
-  }
-  let response;
-  try {
-    response = await fetch(`${BASE}${path}`, options);
-  } catch (err) {
-    if (err.name === 'AbortError') throw err;
-    throw new ApiError(0, 'NETWORK_ERROR', 'You appear to be offline. Check your connection and try again.');
-  }
+
   if (response.status === 204) return null;
   const contentType = response.headers.get('content-type') || '';
   if (!response.ok) {
@@ -79,7 +109,9 @@ export async function api(path, { method = 'GET', body, formData, signal, header
 
 export async function ensureCsrf() {
   try {
-    await api('/auth/csrf');
+    const data = await api('/auth/csrf');
+    if (data?.csrfToken) memoryCsrfToken = data.csrfToken;
+    if (data?.csrfSignature) memoryCsrfSignature = data.csrfSignature;
   } catch {
     // The server also sets the cookie on every response; navigation will retry.
   }

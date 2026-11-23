@@ -3,7 +3,7 @@ import { signToken, setAuthCookie, clearAuthCookie } from '../middleware/auth.js
 import { asyncHandler } from '../utils/http.js';
 import { listNotifications } from '../services/notificationService.js';
 
-export const csrf = (req, res) => res.json({ csrfToken: req.csrfToken });
+export const csrf = (req, res) => res.json({ csrfToken: req.csrfToken, csrfSignature: req.csrfSignature });
 
 export const register = asyncHandler(async (req, res) => {
   const user = await authService.register(req.body, req.ip);

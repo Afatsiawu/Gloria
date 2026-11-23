@@ -11,6 +11,7 @@ export const PROJECT_ROOT = path.resolve(SERVER_ROOT, '..');
 dotenv.config({ path: path.join(PROJECT_ROOT, '.env') });
 dotenv.config({ path: path.join(SERVER_ROOT, '.env'), override: true });
 
+const isVercel = Boolean(process.env.VERCEL);
 const resolvePath = (p, fallback) => {
   const value = p || fallback;
   return path.isAbsolute(value) ? value : path.resolve(SERVER_ROOT, value);
@@ -31,11 +32,14 @@ export const config = {
   isProduction: process.env.NODE_ENV === 'production',
   port: num(process.env.PORT, 4000),
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
-  dbPath: process.env.DB_PATH === ':memory:' ? ':memory:' : resolvePath(process.env.DB_PATH, './data/pharmacy.db'),
-  uploadsDir: resolvePath(process.env.UPLOADS_DIR, './uploads'),
-  prescriptionsDir: resolvePath(process.env.PRESCRIPTIONS_DIR, './uploads/prescriptions'),
-  backupsDir: resolvePath(process.env.BACKUPS_DIR, './backups'),
-  reportsDir: resolvePath(process.env.REPORTS_DIR, './reports'),
+  dbPath:
+    process.env.DB_PATH === ':memory:'
+      ? ':memory:'
+      : resolvePath(process.env.DB_PATH, isVercel ? '/tmp/pharmacy.db' : './data/pharmacy.db'),
+  uploadsDir: resolvePath(process.env.UPLOADS_DIR, isVercel ? '/tmp/uploads' : './uploads'),
+  prescriptionsDir: resolvePath(process.env.PRESCRIPTIONS_DIR, isVercel ? '/tmp/uploads/prescriptions' : './uploads/prescriptions'),
+  backupsDir: resolvePath(process.env.BACKUPS_DIR, isVercel ? '/tmp/backups' : './backups'),
+  reportsDir: resolvePath(process.env.REPORTS_DIR, isVercel ? '/tmp/reports' : './reports'),
   jwtSecret: process.env.JWT_SECRET || 'dev-only-insecure-secret-change-me',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   bcryptRounds: Math.max(10, num(process.env.BCRYPT_ROUNDS, 10)),
@@ -55,7 +59,17 @@ export const config = {
   enableCron: bool(process.env.ENABLE_CRON, true),
 };
 
-for (const dir of [config.prescriptionsDir, config.backupsDir, config.reportsDir]) {
-  fs.mkdirSync(dir, { recursive: true });
+for (const dir of [config.prescriptionsDir, config.backupsDir, config.reportsDir, config.uploadsDir]) {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch {
+    // Ignore on read-only or serverless filesystems; runtime writes may still fail.
+  }
 }
-if (config.dbPath !== ':memory:') fs.mkdirSync(path.dirname(config.dbPath), { recursive: true });
+if (config.dbPath !== ':memory:') {
+  try {
+    fs.mkdirSync(path.dirname(config.dbPath), { recursive: true });
+  } catch {
+    // Ignore on read-only or serverless filesystems.
+  }
+}
