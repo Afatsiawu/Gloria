@@ -20,6 +20,7 @@ const userBody = z.object({
     .or(z.literal('').transform(() => undefined)),
   role: z.enum(['customer', 'pharmacist', 'admin', 'rider']),
   pharmacyId: z.coerce.number().int().positive().nullable().optional(),
+  pharmacyName: z.string().trim().max(100).nullable().optional(),
   community: z.enum(['Doryumu', 'Kordibe']).nullable().optional(),
   deliveryAddress: z.string().trim().max(300).nullable().optional(),
   digitalAddressCode: z.string().trim().max(20).nullable().optional(),

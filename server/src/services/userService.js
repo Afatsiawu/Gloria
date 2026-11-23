@@ -1,5 +1,6 @@
 import { getDb } from '../db/index.js';
 import * as usersRepo from '../repositories/users.js';
+import * as catalogueRepo from '../repositories/catalogue.js';
 import { hashPassword, passwordProblems } from '../utils/password.js';
 import { normalisePhone, isValidGhanaPhone } from '../utils/phone.js';
 import { badRequest, conflict, notFound } from '../utils/http.js';
@@ -21,6 +22,16 @@ function validateAssignment(role, pharmacyId) {
   }
 }
 
+function resolvePharmacyId(input) {
+  if (input.pharmacyId) return Number(input.pharmacyId);
+  if (input.pharmacyName) {
+    const pharmacy = catalogueRepo.getPharmacyByName(input.pharmacyName);
+    if (!pharmacy) throw badRequest(`No pharmacy named "${input.pharmacyName}" was found.`);
+    return pharmacy.id;
+  }
+  return null;
+}
+
 export async function createUser(input, actorId, ip) {
   const phone = normalisePhone(input.phone);
   if (!isValidGhanaPhone(phone)) throw badRequest('Enter a valid Ghana mobile number.');
@@ -30,7 +41,8 @@ export async function createUser(input, actorId, ip) {
   }
   const problems = passwordProblems(input.password);
   if (problems.length) throw badRequest(`Password must contain ${problems.join(', ')}.`);
-  validateAssignment(input.role, input.pharmacyId);
+  const pharmacyId = resolvePharmacyId(input);
+  validateAssignment(input.role, pharmacyId);
 
   const user = usersRepo.createUser({
     role: input.role,
@@ -38,7 +50,7 @@ export async function createUser(input, actorId, ip) {
     phone,
     email: input.email ? input.email.toLowerCase() : null,
     passwordHash: await hashPassword(input.password),
-    pharmacyId: input.pharmacyId || null,
+    pharmacyId: pharmacyId || null,
     community: input.community || null,
     deliveryAddress: input.deliveryAddress || null,
     digitalAddressCode: input.digitalAddressCode || null,
@@ -70,7 +82,8 @@ export async function updateUser(id, input, actorId, ip) {
     const emailOwner = usersRepo.findByEmail(input.email);
     if (emailOwner && emailOwner.id !== id) throw conflict('That email address belongs to another account.');
   }
-  validateAssignment(input.role, input.pharmacyId);
+  const pharmacyId = resolvePharmacyId(input);
+  validateAssignment(input.role, pharmacyId);
   if (id === actorId && input.isActive === false) throw conflict('You cannot suspend your own account.');
   if (current.role === 'admin' && input.role !== 'admin') {
     const admins = getDb().prepare("SELECT COUNT(*) AS c FROM users WHERE role = 'admin' AND is_active = 1").get().c;
@@ -86,7 +99,7 @@ export async function updateUser(id, input, actorId, ip) {
     phone,
     email: input.email ? input.email.toLowerCase() : null,
     role: input.role,
-    pharmacyId: input.pharmacyId || null,
+    pharmacyId: pharmacyId || null,
     community: input.community || null,
     deliveryAddress: input.deliveryAddress || null,
     digitalAddressCode: input.digitalAddressCode || null,

@@ -19,7 +19,7 @@ const EMPTY = {
   phone: '',
   email: '',
   role: 'customer',
-  pharmacyId: '',
+  pharmacyName: '',
   community: 'Doryumu',
   deliveryAddress: '',
   digitalAddressCode: '',
@@ -43,7 +43,6 @@ export default function UsersPage() {
   if (q) query.set('q', q);
   if (role) query.set('role', role);
   const users = useFetch(`/users?${query.toString()}`);
-  const pharmacies = useFetch('/pharmacies');
 
   const openCreate = () => { setModal({ id: null }); setForm(EMPTY); setActionError(null); };
   const openEdit = (user) => {
@@ -53,7 +52,7 @@ export default function UsersPage() {
       phone: user.phone,
       email: user.email || '',
       role: user.role,
-      pharmacyId: user.pharmacy_id || '',
+      pharmacyName: user.pharmacy_name || '',
       community: user.community || 'Doryumu',
       deliveryAddress: user.delivery_address || '',
       digitalAddressCode: user.digital_address_code || '',
@@ -73,7 +72,7 @@ export default function UsersPage() {
         phone: form.phone,
         email: form.email || undefined,
         role: form.role,
-        pharmacyId: ['pharmacist', 'rider'].includes(form.role) ? Number(form.pharmacyId) : null,
+        pharmacyName: ['pharmacist', 'rider'].includes(form.role) ? form.pharmacyName : null,
         community: form.role === 'customer' ? form.community : null,
         deliveryAddress: form.deliveryAddress || null,
         digitalAddressCode: form.digitalAddressCode || null,
@@ -217,13 +216,14 @@ export default function UsersPage() {
               </select>
             </Field>
             {needsPharmacy && (
-              <Field label="Pharmacy" htmlFor="user-pharmacy" required>
-                <select id="user-pharmacy" value={form.pharmacyId} onChange={update('pharmacyId')} required>
-                  <option value="">Choose a pharmacy</option>
-                  {(pharmacies.data?.items || []).map((pharmacy) => (
-                    <option key={pharmacy.id} value={pharmacy.id}>{pharmacy.name} ({pharmacy.community})</option>
-                  ))}
-                </select>
+              <Field label="Pharmacy name" htmlFor="user-pharmacy" required hint="Enter the pharmacy name exactly as it appears in the system.">
+                <input
+                  id="user-pharmacy"
+                  value={form.pharmacyName}
+                  onChange={update('pharmacyName')}
+                  required
+                  placeholder="e.g. Doryumu Community Pharmacy"
+                />
               </Field>
             )}
             {form.role === 'customer' && (

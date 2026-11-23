@@ -4,6 +4,7 @@ import Layout from './components/Layout.jsx';
 import AccessWatcher from './components/AccessWatcher.jsx';
 import { RequireAuth, RequireRole } from './components/guards.jsx';
 import { Loading } from './components/UI.jsx';
+import SiteLoader from './components/SiteLoader.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 const HomePage = lazy(() => import('./pages/HomePage.jsx'));
@@ -68,10 +69,12 @@ function OrderRoute() {
 }
 
 function Fallback() {
-  return <Loading text="Loading this page" />;
+  return <SiteLoader text="Loading this page" />;
 }
 
 export default function App() {
+  const { loading } = useAuth();
+  if (loading) return <SiteLoader text="Loading PharmaLink" />;
   return (
     <Suspense fallback={<div className="wrap"><Fallback /></div>}>
       <AccessWatcher>

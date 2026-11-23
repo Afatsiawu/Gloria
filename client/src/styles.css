@@ -4308,3 +4308,43 @@ th.num {
     scroll-behavior: auto !important;
   }
 }
+
+/* Site loader */
+.site-loader {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 0.75rem;
+  background: var(--color-neutral-0, #ffffff);
+  color: var(--color-indigo-900, #1c1448);
+  text-align: center;
+}
+.site-loader-mark {
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: var(--color-primary-50, #f4f0fa);
+  color: var(--color-primary-600, #6d4fa3);
+}
+.site-loader-name {
+  font-family: var(--font-display, 'Sora', system-ui);
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+.site-loader-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-neutral-100, #e9e4f0);
+  border-top-color: var(--color-primary-600, #6d4fa3);
+  border-radius: 999px;
+  animation: site-loader-spin 0.8s linear infinite;
+}
+@keyframes site-loader-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .site-loader-spinner { animation: none; }
+}

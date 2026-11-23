@@ -103,6 +103,11 @@ export function getPharmacy(id) {
   return getDb().prepare('SELECT * FROM pharmacies WHERE id = ?').get(id);
 }
 
+export function getPharmacyByName(name) {
+  if (!name) return null;
+  return getDb().prepare('SELECT * FROM pharmacies WHERE lower(name) = lower(?)').get(String(name).trim());
+}
+
 export function listCategories() {
   return getDb()
     .prepare(
